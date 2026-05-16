@@ -83,7 +83,7 @@ export default function MatchResultCard({
       {/* Footer: tags + availability */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex flex-wrap gap-1.5">
-          {result.tags.map((tag) => (
+          {result.tags.map((tag: string) => (
             <span key={tag} className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
               {tag}
             </span>
