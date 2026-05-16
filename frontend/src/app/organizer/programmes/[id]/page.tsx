@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,9 @@ import {
   Target,
   Trash2,
   Send,
+  Upload,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,12 +31,40 @@ import { formatDate } from "@/lib/utils";
 export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
+  const { programmes, deleteProgramme, updateProgrammeStatus, updateCoverImage } = useProgrammeStore();
   const programme = programmes.find((p) => p.id === id);
   if (!programme) notFound();
 
   const req = programme.requirements;
   const isDraft = programme.status === "draft";
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  function handleImageFile(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      updateCoverImage(id, dataUrl);
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleImageFile(file);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleImageFile(file);
+  }
 
   return (
     <div className="flex flex-col">
@@ -105,17 +136,78 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
             <h2 className="mb-3 font-semibold text-slate-900">About this Programme</h2>
             <p className="text-sm leading-relaxed text-slate-600">{programme.description}</p>
           </div>
-          <div className="relative h-48 overflow-hidden rounded-xl lg:h-auto">
+          {/* Cover image upload */}
+          <div className="relative h-48 overflow-hidden rounded-xl lg:h-auto group">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
             {programme.coverImage ? (
-              <Image
-                src={programme.coverImage}
-                alt={programme.name}
-                fill
-                className="object-cover"
-                sizes="33vw"
-              />
+              <>
+                <Image
+                  src={programme.coverImage}
+                  alt={programme.name}
+                  fill
+                  className="object-cover"
+                  sizes="33vw"
+                />
+                {/* Overlay on hover */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 bg-white/90 hover:bg-white text-slate-800"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Change Image
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 bg-white/90 hover:bg-red-50 text-red-600 border-red-200"
+                    onClick={() => updateCoverImage(id, "")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                </div>
+              </>
             ) : (
-              <div className="h-full w-full bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl" />
+              <div
+                className={`h-full w-full min-h-48 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed transition-colors cursor-pointer
+                  ${dragOver
+                    ? "border-violet-400 bg-violet-50"
+                    : "border-slate-300 bg-gradient-to-br from-slate-700 to-slate-900 hover:border-violet-400"
+                  }`}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+              >
+                {uploading ? (
+                  <p className="text-sm text-slate-300 animate-pulse">Uploading…</p>
+                ) : dragOver ? (
+                  <>
+                    <ImagePlus className="h-8 w-8 text-violet-500" />
+                    <p className="text-sm font-medium text-violet-600">Drop to upload</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
+                      <ImagePlus className="h-6 w-6 text-slate-300" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-slate-200">Upload cover image</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Click or drag & drop</p>
+                      <p className="text-xs text-slate-500 mt-0.5">PNG, JPG, WEBP</p>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
