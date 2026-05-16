@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* ── Left decorative panel ── */}
-      <div className="hidden lg:flex lg:w-[52%] flex-col justify-between bg-gradient-to-br from-violet-600 via-violet-700 to-violet-800 p-14 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-[52%] flex-col justify-between bg-gradient-to-br from-violet-950 via-violet-900 to-purple-900 p-14 relative overflow-hidden">
         {/* Background blobs */}
         <div className="pointer-events-none absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-violet-500/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-pink-500/20 blur-3xl" />
@@ -43,12 +43,12 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
             <Zap className="h-5 w-5 text-white" />
           </div>
           <div>
-            <span className="text-lg font-bold text-white tracking-tight">Organizer</span>
-            <p className="text-[10px] text-violet-200 uppercase tracking-widest leading-none mt-0.5">Ecosystem Management</p>
+            <span className="text-lg font-bold text-white tracking-tight">NexusAI</span>
+            <p className="text-[11px] text-violet-400 uppercase tracking-widest leading-none mt-0.5">Ecosystem Management</p>
           </div>
         </div>
 

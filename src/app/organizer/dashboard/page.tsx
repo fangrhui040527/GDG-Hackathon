@@ -32,11 +32,14 @@ export default function OrganizerDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-50">
             <Download className="h-4 w-4" />
             Export Report
           </Button>
-          <Button variant="navy" className="gap-2" asChild>
+          <Button
+            variant="navy"
+            asChild
+          >
             <Link href="/organizer/create-programme">
               <Plus className="h-4 w-4" />
               New Programme
@@ -52,34 +55,57 @@ export default function OrganizerDashboardPage() {
             label="Total Programmes"
             value={ORGANIZER_STATS.totalProgrammes}
             icon={FolderOpen}
-            highlight
+            color="pink"
+            variant="minimal"
           />
-          <StatCard label="Draft" value={ORGANIZER_STATS.draft} icon={FilePenLine} />
+          <StatCard label="Draft" value={ORGANIZER_STATS.draft} icon={FilePenLine} color="violet" variant="minimal" />
           <StatCard
             label="Submitted to Admin"
             value={ORGANIZER_STATS.submittedToAdmin}
             icon={Send}
+            color="blue"
+            variant="minimal"
           />
           <StatCard
             label="Pending Review"
             value={ORGANIZER_STATS.pendingReview}
             icon={Clock}
+            color="emerald"
+            variant="minimal"
           />
-          <StatCard label="Published" value={ORGANIZER_STATS.published} icon={Globe} />
+          <StatCard
+            label="Published"
+            value={ORGANIZER_STATS.published}
+            icon={Globe}
+            color="pink"
+            variant="minimal"
+          />
         </div>
 
         {/* Recent Programmes */}
         <section>
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Programmes</h2>
-          </div>
-
           <Tabs defaultValue="all">
-            <div className="mb-5 flex items-center gap-3">
-              <TabsList className="bg-slate-100">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="drafts">Drafts</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Recent Programmes</h2>
+              <TabsList className="bg-slate-100 border border-slate-200 rounded-full p-1">
+                <TabsTrigger
+                  value="all"
+                  className="rounded-full px-3 text-xs data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow"
+                >
+                  All
+                </TabsTrigger>
+                <TabsTrigger
+                  value="drafts"
+                  className="rounded-full px-3 text-xs data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow"
+                >
+                  Drafts
+                </TabsTrigger>
+                <TabsTrigger
+                  value="active"
+                  className="rounded-full px-3 text-xs data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow"
+                >
+                  Active
+                </TabsTrigger>
               </TabsList>
             </div>
 
