@@ -34,3 +34,21 @@ class BigQueryGraphRequest(BaseModel):
 
 class BigQueryGraphResponse(BaseModel):
     rows: list[dict]
+
+
+class VectorSearchRequest(BaseModel):
+    query_text: str | None = None
+    query_vector: list[float] | None = None
+    top_k: int = Field(10, ge=1, le=100)
+    distance_type: str = "COSINE"
+
+
+class VectorSearchMatch(BaseModel):
+    doc_id: str | None = None
+    content: str | None = None
+    metadata: dict | None = None
+    distance: float | None = None
+
+
+class VectorSearchResponse(BaseModel):
+    matches: list[VectorSearchMatch]

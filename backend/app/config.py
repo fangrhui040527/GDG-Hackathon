@@ -18,6 +18,9 @@ class Settings(BaseSettings):
 
     bigquery_project_id: str
     bigquery_location: str
+    bigquery_dataset: str 
+    bigquery_vector_table: str 
+    bigquery_vector_index: str 
 
     class Config:
         env_prefix = "APP_"
