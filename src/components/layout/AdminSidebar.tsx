@@ -4,25 +4,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  PlusCircle,
-  FolderOpen,
-  Send,
   FileText,
-  User,
+  Users,
+  CheckSquare,
+  Globe,
+  Network,
+  BarChart3,
   LogOut,
+  User,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/organizer/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/organizer/create-programme", label: "Create Programme", icon: PlusCircle },
-  { href: "/organizer/my-programmes", label: "My Programmes", icon: FolderOpen },
-  { href: "/organizer/submitted", label: "Submitted to Admin", icon: Send },
-  { href: "/organizer/form-hub", label: "Form Hub", icon: FileText },
+  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/submissions", label: "Submissions", icon: FileText },
+  { href: "/admin/match-review", label: "Match Review", icon: CheckSquare },
+  { href: "/admin/published", label: "Published", icon: Globe },
+  { href: "/admin/manage-actors", label: "Manage Actors", icon: Users },
+  { href: "/admin/relationships", label: "Relationships", icon: Network },
+  { href: "/admin/form-hub", label: "Form Hub", icon: FileText },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
 ];
 
-export default function OrganizerSidebar() {
+export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
@@ -33,7 +38,7 @@ export default function OrganizerSidebar() {
           <Zap className="h-5 w-5 text-white" />
         </div>
         <div>
-          <p className="text-sm font-bold text-slate-900 leading-tight">Organizer</p>
+          <p className="text-sm font-bold text-slate-900 leading-tight">Admin</p>
           <p className="text-sm font-bold text-slate-900 leading-tight">Portal</p>
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none mt-0.5">Ecosystem Management</p>
         </div>
