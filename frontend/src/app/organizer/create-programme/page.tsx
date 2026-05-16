@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -177,20 +178,20 @@ export default function CreateProgrammePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="startDate">Start Date *</Label>
-                    <Input
+                    <DatePicker
                       id="startDate"
-                      type="date"
                       value={form.startDate}
-                      onChange={(e) => update("startDate", e.target.value)}
+                      onChange={(v) => update("startDate", v)}
+                      placeholder="Pick start date"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="endDate">End Date</Label>
-                    <Input
+                    <DatePicker
                       id="endDate"
-                      type="date"
                       value={form.endDate}
-                      onChange={(e) => update("endDate", e.target.value)}
+                      onChange={(v) => update("endDate", v)}
+                      placeholder="Pick end date"
                     />
                   </div>
                 </div>
@@ -295,31 +296,68 @@ export default function CreateProgrammePage() {
 
             {/* Step 5: Review */}
             {step === 5 && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <p className="text-sm text-slate-500">
                   Review your programme details before running AI matching.
                 </p>
-                <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
-                  {[
-                    { label: "Name", value: form.name || "—" },
-                    { label: "Category", value: form.category || "—" },
-                    { label: "Start Date", value: form.startDate || "—" },
-                    { label: "Target Industry", value: form.targetIndustry || "—" },
-                    { label: "Target Country", value: form.targetCountry || "—" },
-                    { label: "Company Stage", value: form.targetCompanyStage || "—" },
-                    { label: "Required Companies", value: String(form.requiredCompanies) },
-                    { label: "Required Mentors", value: String(form.requiredMentors) },
-                    { label: "Required Partners", value: String(form.requiredPartners) },
-                    {
-                      label: "Required Service Providers",
-                      value: String(form.requiredServiceProviders),
-                    },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-sm text-slate-500">{label}</span>
-                      <span className="text-sm font-medium text-slate-800">{value}</span>
-                    </div>
-                  ))}
+
+                {/* Programme Identity */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Programme</p>
+                  <div className="rounded-xl border border-slate-200 overflow-hidden">
+                    {[
+                      { label: "Name", value: form.name || "—" },
+                      { label: "Category", value: form.category || "—" },
+                      { label: "Start Date", value: form.startDate || "—" },
+                      { label: "End Date", value: form.endDate || "—" },
+                    ].map(({ label, value }, i, arr) => (
+                      <div
+                        key={label}
+                        className={`flex items-center justify-between px-4 py-3 bg-slate-50 ${i < arr.length - 1 ? "border-b border-slate-200" : ""}`}
+                      >
+                        <span className="text-sm text-slate-500 font-medium">{label}</span>
+                        <span className="text-sm font-semibold text-slate-800">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Target Criteria */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Target Criteria</p>
+                  <div className="rounded-xl border border-slate-200 overflow-hidden">
+                    {[
+                      { label: "Industry", value: form.targetIndustry || "—" },
+                      { label: "Country", value: form.targetCountry || "—" },
+                      { label: "Company Stage", value: form.targetCompanyStage || "—" },
+                    ].map(({ label, value }, i, arr) => (
+                      <div
+                        key={label}
+                        className={`flex items-center justify-between px-4 py-3 bg-slate-50 ${i < arr.length - 1 ? "border-b border-slate-200" : ""}`}
+                      >
+                        <span className="text-sm text-slate-500 font-medium">{label}</span>
+                        <span className="text-sm font-semibold text-slate-800">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Capacity */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Capacity</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Companies", value: form.requiredCompanies, color: "bg-blue-50 border-blue-200 text-blue-700" },
+                      { label: "Mentors", value: form.requiredMentors, color: "bg-purple-50 border-purple-200 text-purple-700" },
+                      { label: "Partners", value: form.requiredPartners, color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+                      { label: "Service Providers", value: form.requiredServiceProviders, color: "bg-orange-50 border-orange-200 text-orange-700" },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} className={`rounded-xl border px-4 py-3 flex flex-col gap-1 ${color}`}>
+                        <span className="text-xs font-medium opacity-75">{label}</span>
+                        <span className="text-2xl font-bold">{value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
