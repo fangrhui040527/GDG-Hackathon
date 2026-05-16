@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FolderOpen,
@@ -14,12 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { useProgrammeStore } from "@/lib/store";
+import { fetchProgrammes } from "@/lib/api";
+import type { Programme } from "@/types";
 
 export default function OrganizerDashboardPage() {
-  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
-  const allProgrammes = programmes;
+  const [allProgrammes, setAllProgrammes] = useState<Programme[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes().then(setAllProgrammes).catch(() => {});
+  }, []);
+
   const drafts = allProgrammes.filter((p) => p.status === "draft");
+  const submitted = allProgrammes.filter((p) => p.status === "submitted");
+  const pendingReview = allProgrammes.filter((p) => p.status === "pending_review");
+  const published = allProgrammes.filter((p) => ["published", "active"].includes(p.status));
   const active = allProgrammes.filter((p) =>
     ["active", "published"].includes(p.status)
   );
@@ -61,11 +70,35 @@ export default function OrganizerDashboardPage() {
       <div className="p-8 space-y-8">
         {/* Stats row */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          <StatCard label="Total Programmes" value={stats.total} icon={FolderOpen} color="pink" variant="minimal" />
-          <StatCard label="Draft" value={stats.draft} icon={FilePenLine} color="violet" variant="minimal" />
-          <StatCard label="Submitted to Admin" value={stats.submitted} icon={Send} color="blue" variant="minimal" />
-          <StatCard label="Pending Review" value={stats.pendingReview} icon={Clock} color="emerald" variant="minimal" />
-          <StatCard label="Published" value={stats.published} icon={Globe} color="pink" variant="minimal" />
+          <StatCard
+            label="Total Programmes"
+            value={allProgrammes.length}
+            icon={FolderOpen}
+            color="pink"
+            variant="minimal"
+          />
+          <StatCard label="Draft" value={drafts.length} icon={FilePenLine} color="violet" variant="minimal" />
+          <StatCard
+            label="Submitted to Admin"
+            value={submitted.length}
+            icon={Send}
+            color="blue"
+            variant="minimal"
+          />
+          <StatCard
+            label="Pending Review"
+            value={pendingReview.length}
+            icon={Clock}
+            color="emerald"
+            variant="minimal"
+          />
+          <StatCard
+            label="Published"
+            value={published.length}
+            icon={Globe}
+            color="pink"
+            variant="minimal"
+          />
         </div>
 
         {/* Recent Programmes */}

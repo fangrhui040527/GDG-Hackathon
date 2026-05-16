@@ -1,14 +1,24 @@
 "use client";
 
-import { BarChart3, TrendingUp, Activity } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BarChart3, TrendingUp, Users, Activity } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
-import { useProgrammeStore } from "@/lib/store";
+import { fetchProgrammes, fetchActors } from "@/lib/api";
+import type { Programme } from "@/types";
+import type { ActorTableRow } from "@/types/actor";
 
 export default function AdminReportsPage() {
-  const { programmes } = useProgrammeStore();
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [actors, setActors] = useState<ActorTableRow[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes().then(setProgrammes).catch(() => {});
+    fetchActors().then(setActors).catch(() => {});
+  }, []);
+
   const totalProgrammes = programmes.length;
   const publishedCount = programmes.filter((p) => ["published", "active"].includes(p.status)).length;
-  const activeCount = programmes.filter((p) => p.status === "active").length;
+  const activeProgrammes = programmes.filter((p) => p.status === "active");
 
   return (
     <div className="flex flex-col">
@@ -20,7 +30,8 @@ export default function AdminReportsPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Total Programmes" value={totalProgrammes} icon={BarChart3} color="violet" />
           <StatCard label="Published" value={publishedCount} icon={TrendingUp} color="emerald" />
-          <StatCard label="Active" value={activeCount} icon={Activity} color="amber" />
+          <StatCard label="Total Actors" value={actors.length} icon={Users} color="blue" />
+          <StatCard label="Active" value={activeProgrammes.length} icon={Activity} color="amber" />
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">

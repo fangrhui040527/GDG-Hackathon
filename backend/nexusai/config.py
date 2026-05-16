@@ -1,5 +1,4 @@
 from functools import lru_cache
-from typing import Set
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,9 +19,15 @@ class Settings(BaseSettings):
     database_password: str | None = Field(default=None, alias="DATABASE_PASSWORD")
     database_host: str | None = Field(default=None, alias="DATABASE_HOST")
     database_port: int = Field(default=5432, alias="DATABASE_PORT")
+    database_connector_mode: str = Field(default="direct", alias="DATABASE_CONNECTOR_MODE")
+    db_connect_timeout_seconds: int = Field(default=10, alias="DB_CONNECT_TIMEOUT_SECONDS")
+    db_pool_size: int = Field(default=5, alias="DB_POOL_SIZE")
+    db_max_overflow: int = Field(default=10, alias="DB_MAX_OVERFLOW")
+    db_pool_timeout_seconds: int = Field(default=10, alias="DB_POOL_TIMEOUT_SECONDS")
     google_cloud_project: str = Field(alias="GOOGLE_CLOUD_PROJECT")
     google_cloud_location: str = Field(default="asia-southeast1", alias="GOOGLE_CLOUD_LOCATION")
     google_application_credentials: str | None = Field(default=None, alias="GOOGLE_APPLICATION_CREDENTIALS")
+    google_api_timeout_seconds: int = Field(default=10, alias="GOOGLE_API_TIMEOUT_SECONDS")
 
     vertex_gemini_model: str = Field(default="gemini-2.5-flash", alias="VERTEX_GEMINI_MODEL")
     vertex_reasoning_model: str = Field(default="gemini-2.5-pro", alias="VERTEX_REASONING_MODEL")
@@ -84,8 +89,16 @@ class Settings(BaseSettings):
             raise ValueError("DATABASE_URL must point to Cloud PostgreSQL/PostgreSQL")
         return value
 
+    @field_validator("database_connector_mode")
+    @classmethod
+    def require_known_database_connector_mode(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"direct", "cloud_sql_connector"}:
+            raise ValueError("DATABASE_CONNECTOR_MODE must be 'direct' or 'cloud_sql_connector'")
+        return normalized
+
     @property
-    def enabled_mcp_tools(self) -> Set[str]:
+    def enabled_mcp_tools(self) -> set[str]:
         tools: set[str] = set()
         if self.enable_bigquery_mcp:
             tools.add("bigquery_query")
@@ -98,7 +111,7 @@ class Settings(BaseSettings):
         return tools
 
     @property
-    def disabled_mcp_tools(self) -> Set[str]:
+    def disabled_mcp_tools(self) -> set[str]:
         return {
             "firestore_mcp",
             "gmail_mcp",

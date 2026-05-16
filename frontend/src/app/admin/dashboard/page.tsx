@@ -1,14 +1,23 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FileText, Globe, Activity, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { useProgrammeStore } from "@/lib/store";
+import { fetchProgrammes, fetchActors } from "@/lib/api";
+import type { Programme } from "@/types";
+import type { ActorTableRow } from "@/types/actor";
 
 export default function AdminDashboardPage() {
-  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [actors, setActors] = useState<ActorTableRow[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes().then(setProgrammes).catch(() => {});
+    fetchActors().then(setActors).catch(() => {});
+  }, []);
 
   const pendingProgrammes = programmes.filter((p) =>
     ["submitted", "pending_review", "changes_requested"].includes(p.status)
@@ -16,12 +25,7 @@ export default function AdminDashboardPage() {
   const publishedProgrammes = programmes.filter((p) =>
     ["published", "active"].includes(p.status)
   );
-  const stats = {
-    pending: pendingProgrammes.length,
-    published: publishedProgrammes.length,
-    active: programmes.filter((p) => p.status === "active").length,
-    total: programmes.length,
-  };
+  const activeProgrammes = programmes.filter((p) => p.status === "active");
 
   return (
     <div className="flex flex-col">
@@ -37,10 +41,34 @@ export default function AdminDashboardPage() {
       <div className="p-8 space-y-8">
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard label="Pending Submissions" value={stats.pending} icon={FileText} color="pink" variant="minimal" />
-          <StatCard label="Published" value={stats.published} icon={Globe} color="emerald" variant="minimal" />
-          <StatCard label="Active Programmes" value={stats.active} icon={Activity} color="blue" variant="minimal" />
-          <StatCard label="Total Programmes" value={stats.total} icon={Users} color="violet" variant="minimal" />
+          <StatCard
+            label="Pending Submissions"
+            value={pendingProgrammes.length}
+            icon={FileText}
+            color="pink"
+            variant="minimal"
+          />
+          <StatCard
+            label="Published"
+            value={publishedProgrammes.length}
+            icon={Globe}
+            color="emerald"
+            variant="minimal"
+          />
+          <StatCard
+            label="Active Programmes"
+            value={activeProgrammes.length}
+            icon={Activity}
+            color="blue"
+            variant="minimal"
+          />
+          <StatCard
+            label="Total Actors"
+            value={actors.length}
+            icon={Users}
+            color="violet"
+            variant="minimal"
+          />
         </div>
 
         {/* Pending Review */}

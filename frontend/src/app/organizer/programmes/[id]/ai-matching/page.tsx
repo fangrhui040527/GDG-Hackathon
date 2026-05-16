@@ -8,12 +8,11 @@ import { Button } from "@/components/ui/button";
 import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
 import type { MatchResult, ShortlistItem } from "@/types";
-import { MOCK_MATCH_RESULTS, MOCK_SHORTLIST } from "@/lib/mock-data";
 
 export default function AIMatchingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [shortlist, setShortlist] = useState<ShortlistItem[]>(MOCK_SHORTLIST);
+  const [shortlist, setShortlist] = useState<ShortlistItem[]>([]);
 
   const handleAdd = (result: MatchResult) => {
     const existing = shortlist.find((s) => s.matchResultId === result.id);
@@ -70,7 +69,7 @@ export default function AIMatchingPage({ params }: { params: Promise<{ id: strin
           {/* Match results — left 2/3 */}
           <div className="lg:col-span-2">
             <MatchResultsSection
-              results={MOCK_MATCH_RESULTS}
+              results={{ companies: [], mentors: [], partners: [], serviceProviders: [] }}
               shortlist={shortlist}
               onAddToShortlist={handleAdd}
             />

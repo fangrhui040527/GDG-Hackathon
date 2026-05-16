@@ -1,10 +1,8 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { notFound } from "next/navigation";
 import {
   CalendarDays,
   Globe,
@@ -21,16 +19,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useProgrammeStore } from "@/lib/store";
+import { fetchProgramme } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import type { Programme } from "@/types";
 
 export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
-  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
-  const programme = programmes.find((p) => p.id === id);
-  if (!programme) notFound();
+  const [programme, setProgramme] = useState<Programme | null>(null);
+
+  useEffect(() => {
+    fetchProgramme(id).then(setProgramme).catch(() => {});
+  }, [id]);
+
+  if (!programme) {
+    return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
+  }
 
   const req = programme.requirements;
   const isDraft = programme.status === "draft";

@@ -1,3 +1,4 @@
+import enum
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date, datetime, time, timezone
@@ -6,18 +7,16 @@ from typing import Any, Optional
 from sqlalchemy import (
     Date,
     DateTime,
-    Enum,
     ForeignKey,
     Integer,
     String,
     Text,
     Time,
     create_engine,
+    event,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import StaticPool
-
-import enum
 
 
 class Base(DeclarativeBase):
@@ -201,9 +200,7 @@ class Partner(Base, TimestampMixin):
 
     partner_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organisation_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    organisation_type: Mapped[OrgTypeEnum] = mapped_column(
-        Enum(OrgTypeEnum, name="org_type_enum", create_type=False), nullable=False
-    )
+    organisation_type: Mapped[str] = mapped_column(String(50), nullable=False)
     country: Mapped[str] = mapped_column(String(255), nullable=False)
     website: Mapped[Optional[str]] = mapped_column(String(255))
     contact_person_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -222,15 +219,15 @@ class ServiceProvider(Base, TimestampMixin):
 
     sp_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organisation_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    service_provider_type: Mapped[ServiceProviderTypeEnum] = mapped_column(
-        Enum(ServiceProviderTypeEnum, name="service_provider_type_enum", create_type=False),
+    service_provider_type: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
-        default=ServiceProviderTypeEnum.NotSpecified,
+        default=ServiceProviderTypeEnum.NotSpecified.value,
     )
-    country_region: Mapped[CountryRegionEnum] = mapped_column(
-        Enum(CountryRegionEnum, name="country_region_enum", create_type=False),
+    country_region: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
-        default=CountryRegionEnum.NotSpecified,
+        default=CountryRegionEnum.NotSpecified.value,
     )
     website_url: Mapped[Optional[str]] = mapped_column(Text)
     contact_person_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -238,20 +235,20 @@ class ServiceProvider(Base, TimestampMixin):
     company_description: Mapped[str] = mapped_column(Text, nullable=False)
     services_offered: Mapped[str] = mapped_column(Text, nullable=False)
     detailed_service_description: Mapped[str] = mapped_column(Text, nullable=False)
-    target_company_stage: Mapped[TargetCompanyStageEnum] = mapped_column(
-        Enum(TargetCompanyStageEnum, name="target_company_stage_enum", create_type=False),
+    target_company_stage: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
-        default=TargetCompanyStageEnum.NotSpecified,
+        default=TargetCompanyStageEnum.NotSpecified.value,
     )
-    pricing_model: Mapped[PricingModelEnum] = mapped_column(
-        Enum(PricingModelEnum, name="pricing_model_enum", create_type=False),
+    pricing_model: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
-        default=PricingModelEnum.NotSpecified,
+        default=PricingModelEnum.NotSpecified.value,
     )
-    current_capacity: Mapped[CurrentCapacityEnum] = mapped_column(
-        Enum(CurrentCapacityEnum, name="current_capacity_enum", create_type=False),
+    current_capacity: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
-        default=CurrentCapacityEnum.NotSpecified,
+        default=CurrentCapacityEnum.NotSpecified.value,
     )
 
 
@@ -275,9 +272,7 @@ class EventParticipant(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.event_id"), nullable=False)
-    entity_type: Mapped[EntityTypeEnum] = mapped_column(
-        Enum(EntityTypeEnum, name="entity_type_enum", create_type=False), nullable=False
-    )
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
     entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -351,8 +346,20 @@ class AuditLog(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
 
 
-def create_postgres_engine(database_url: str):
-    return create_engine(database_url, pool_pre_ping=True)
+def create_postgres_engine(database_url: str, settings: Any | None = None):
+    connect_timeout = getattr(settings, "db_connect_timeout_seconds", 10)
+    pool_size = getattr(settings, "db_pool_size", 5)
+    max_overflow = getattr(settings, "db_max_overflow", 10)
+    pool_timeout = getattr(settings, "db_pool_timeout_seconds", 10)
+    return create_engine(
+        database_url,
+        pool_pre_ping=True,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_timeout=pool_timeout,
+        pool_recycle=1800,
+        connect_args={"connect_timeout": connect_timeout},
+    )
 
 
 def create_cloud_sql_connector_engine(settings: Any):
@@ -368,7 +375,7 @@ def create_cloud_sql_connector_engine(settings: Any):
     if missing:
         raise ValueError(f"Missing Cloud SQL connector settings: {', '.join(missing)}")
 
-    connector = Connector()
+    connector = Connector(refresh_strategy="LAZY")
 
     def get_connection():
         return connector.connect(
@@ -378,15 +385,33 @@ def create_cloud_sql_connector_engine(settings: Any):
             password=settings.database_password,
             db=settings.database_name,
             ip_type=IPTypes.PUBLIC,
+            timeout=getattr(settings, "db_connect_timeout_seconds", 10),
         )
 
-    return create_engine("postgresql+pg8000://", creator=get_connection, pool_pre_ping=True)
+    engine = create_engine(
+        "postgresql+pg8000://",
+        creator=get_connection,
+        pool_pre_ping=True,
+        pool_size=getattr(settings, "db_pool_size", 5),
+        max_overflow=getattr(settings, "db_max_overflow", 10),
+        pool_timeout=getattr(settings, "db_pool_timeout_seconds", 10),
+        pool_recycle=1800,
+    )
+
+    @event.listens_for(engine, "engine_disposed")
+    def close_connector(*args: Any) -> None:
+        connector.close()
+
+    return engine
 
 
 def create_database_engine(settings: Any):
-    if settings.cloud_sql_connection_name:
+    mode = getattr(settings, "database_connector_mode", "direct")
+    if mode == "cloud_sql_connector":
         return create_cloud_sql_connector_engine(settings)
-    return create_postgres_engine(settings.database_url)
+    if mode == "direct":
+        return create_postgres_engine(settings.database_url, settings)
+    raise ValueError("DATABASE_CONNECTOR_MODE must be 'direct' or 'cloud_sql_connector'")
 
 
 def create_sqlite_engine():

@@ -1,18 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useProgrammeStore } from "@/lib/store";
+import { fetchProgrammes } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import type { Programme } from "@/types";
 
 export default function AdminMatchReviewPage() {
-  const { programmes: allProgrammes } = useProgrammeStore();
-  const programmes = allProgrammes.filter((p) =>
-    ["approved", "published", "active"].includes(p.status)
-  );
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes()
+      .then((all) => all.filter((p) => ["approved", "published", "active"].includes(p.status)))
+      .then(setProgrammes)
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex flex-col">
