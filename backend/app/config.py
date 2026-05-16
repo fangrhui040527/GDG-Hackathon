@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     bigquery_project_id: str
     bigquery_location: str
-    bigquery_dataset: str 
+    bigquery_dataset_id: str 
     bigquery_vector_table: str 
     bigquery_vector_index: str 
 
@@ -26,6 +26,7 @@ class Settings(BaseSettings):
         env_prefix = "APP_"
         env_file = str(ENV_FILE)
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
 settings = Settings()

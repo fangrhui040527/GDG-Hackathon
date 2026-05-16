@@ -34,7 +34,7 @@ def vector_search(settings: Settings, payload: VectorSearchRequest) -> VectorSea
     query_vector = _resolve_query_vector(settings, payload)
 
     table_ref = (
-        f"`{settings.bigquery_project_id}.{settings.bigquery_dataset}."
+        f"`{settings.bigquery_project_id}.{settings.bigquery_dataset_id}."
         f"{settings.bigquery_vector_table}`"
     )
 
