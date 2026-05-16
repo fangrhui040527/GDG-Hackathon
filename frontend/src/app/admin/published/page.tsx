@@ -17,7 +17,7 @@ export default function AdminPublishedPage() {
     fetchProgrammes()
       .then((all) => all.filter((p) => ["published", "active"].includes(p.status)))
       .then(setPublished)
-      .catch(() => {});
+      .catch((e) => console.error("Failed to load published:", e));
   }, []);
 
   return (

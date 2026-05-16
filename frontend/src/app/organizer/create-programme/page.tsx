@@ -18,12 +18,10 @@ import {
 import { WIZARD_STEPS, PROGRAMME_CATEGORIES, COMPANY_STAGES, COUNTRIES } from "@/lib/constants";
 import { createProgramme } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useProgrammeStore } from "@/lib/store";
-import type { Programme, ProgrammeCategory, CompanyStage } from "@/types";
+import type { ProgrammeCategory, CompanyStage } from "@/types";
 
 export default function CreateProgrammePage() {
   const router = useRouter();
-  const { addProgramme } = useProgrammeStore();
   const [step, setStep] = useState(1);
   const totalSteps = WIZARD_STEPS.length;
 

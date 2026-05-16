@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useFormStore } from "@/lib/form-store";
+import { registerMentor } from "@/lib/api";
 import { COUNTRIES, COMPANY_STAGES } from "@/lib/constants";
 
 const INDUSTRIES = [
@@ -74,12 +75,31 @@ export default function MentorRegistrationForm() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    addSubmission("mentor", form);
-    setSubmitted(true);
+    try {
+      await registerMentor({
+        full_name: form.full_name,
+        email: form.email,
+        job_title: form.job_title,
+        organization_name: form.organization_name,
+        linkedin_profile_url: form.linkedin_profile_url,
+        short_bio: form.short_bio,
+        preferred_company_stage: form.preferred_company_stage,
+        preferred_industry: form.preferred_industry,
+        type_of_support_offered: form.type_of_support_offered,
+        available_hours_per_month: form.available_hours_per_month ? Number(form.available_hours_per_month) : null,
+        max_companies_to_mentor: form.max_companies_to_mentor ? Number(form.max_companies_to_mentor) : null,
+        current_availability_status: form.current_availability_status || "Available",
+        country: form.country,
+      });
+      addSubmission("mentor", form);
+      setSubmitted(true);
+    } catch {
+      setErrors({ full_name: "Failed to register. Please try again." });
+    }
   };
 
   if (submitted) {

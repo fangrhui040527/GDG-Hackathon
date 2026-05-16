@@ -19,7 +19,7 @@ export default function AdminSubmissionsPage() {
     fetchProgrammes()
       .then((all) => all.filter((p) => SUBMISSION_STATUSES.includes(p.status)))
       .then(setSubmissions)
-      .catch(() => {});
+      .catch((e) => console.error("Failed to load submissions:", e));
   }, []);
 
   return (

@@ -18,7 +18,7 @@ export default function AdminSubmissionDetailPage({ params }: { params: Promise<
   const [adminShortlist, setAdminShortlist] = useState<ShortlistItem[]>([]);
 
   useEffect(() => {
-    fetchProgramme(id).then(setProgramme).catch(() => {});
+    fetchProgramme(id).then(setProgramme).catch((e) => console.error("Failed to load programme:", e));
   }, [id]);
 
   if (!programme) {

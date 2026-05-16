@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useFormStore } from "@/lib/form-store";
+import { registerServiceProvider } from "@/lib/api";
 import { COUNTRIES, COMPANY_STAGES } from "@/lib/constants";
 
 const SERVICE_PROVIDER_TYPES = [
@@ -57,12 +58,17 @@ export default function ServiceProviderRegistrationForm() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    addSubmission("service-provider", form);
-    setSubmitted(true);
+    try {
+      await registerServiceProvider(form);
+      addSubmission("service-provider", form);
+      setSubmitted(true);
+    } catch {
+      setErrors({ organisation_name: "Failed to register. Please try again." });
+    }
   };
 
   if (submitted) {

@@ -17,7 +17,7 @@ export default function AdminManageActorsPage() {
   const [actors, setActors] = useState<ActorTableRow[]>([]);
 
   useEffect(() => {
-    fetchActors().then(setActors).catch(() => {});
+    fetchActors().then(setActors).catch((e) => console.error("Failed to load actors:", e));
   }, []);
   return (
     <div className="flex flex-col">

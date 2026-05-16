@@ -17,7 +17,7 @@ export default function SubmittedPage() {
     fetchProgrammes()
       .then((all) => all.filter((p) => ["submitted", "pending_review", "changes_requested"].includes(p.status)))
       .then(setSubmitted)
-      .catch(() => {});
+      .catch((e) => console.error("Failed to load submitted:", e));
   }, []);
 
   return (
