@@ -8,7 +8,7 @@ const FORMS = [
       "Register your startup or company to join the NexusAI ecosystem and be considered for active programmes.",
     colorClass: "bg-blue-500",
     iconBgClass: "bg-blue-50",
-    url: "/organizer/form-hub/company",
+    url: "/forms/company",
   },
   {
     id: "mentor",
@@ -17,7 +17,7 @@ const FORMS = [
       "Sign up as a mentor and support high-growth startups in our ecosystem programmes.",
     colorClass: "bg-purple-500",
     iconBgClass: "bg-purple-50",
-    url: "/organizer/form-hub/mentor",
+    url: "/forms/mentor",
   },
   {
     id: "partner",
@@ -26,7 +26,7 @@ const FORMS = [
       "Register as an ecosystem partner to co-create programmes and open market opportunities for startups.",
     colorClass: "bg-emerald-500",
     iconBgClass: "bg-emerald-50",
-    url: "/organizer/form-hub/partner",
+    url: "/forms/partner",
   },
   {
     id: "service_provider",
@@ -35,7 +35,7 @@ const FORMS = [
       "Register your services — legal, cloud, finance, or more — to support companies in our ecosystem.",
     colorClass: "bg-orange-500",
     iconBgClass: "bg-orange-50",
-    url: "/organizer/form-hub/service-provider",
+    url: "/forms/service-provider",
   },
 ];
 

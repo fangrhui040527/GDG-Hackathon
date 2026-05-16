@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,10 +88,10 @@ export default function CreateProgrammePage() {
         <div className="mx-auto max-w-3xl">
           {/* Stepper */}
           <div className="mb-8">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start">
               {WIZARD_STEPS.map((s, i) => (
-                <div key={s.id} className="flex flex-1 items-center">
-                  <div className="flex flex-col items-center">
+                <React.Fragment key={s.id}>
+                  <div className="flex flex-col items-center shrink-0">
                     <div
                       className={cn(
                         "flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-colors",
@@ -106,7 +106,7 @@ export default function CreateProgrammePage() {
                     </div>
                     <p
                       className={cn(
-                        "mt-1 hidden text-center text-xs font-medium sm:block",
+                        "mt-1 hidden text-center text-xs font-medium sm:block max-w-[80px]",
                         step === s.id ? "text-blue-600" : "text-slate-400"
                       )}
                     >
@@ -116,12 +116,12 @@ export default function CreateProgrammePage() {
                   {i < WIZARD_STEPS.length - 1 && (
                     <div
                       className={cn(
-                        "mx-2 h-0.5 flex-1",
+                        "mt-4 h-0.5 flex-1 mx-2",
                         step > s.id ? "bg-blue-600" : "bg-slate-200"
                       )}
                     />
                   )}
-                </div>
+                </React.Fragment>
               ))}
             </div>
           </div>

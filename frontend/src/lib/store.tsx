@@ -14,6 +14,7 @@ interface ProgrammeStore {
   addProgramme: (p: Programme) => void;
   deleteProgramme: (id: string) => void;
   updateProgrammeStatus: (id: string, status: ProgrammeStatus) => void;
+  updateCoverImage: (id: string, coverImage: string) => void;
 }
 
 const ProgrammeStoreContext = createContext<ProgrammeStore | null>(null);
@@ -46,9 +47,17 @@ export function ProgrammeStoreProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const updateCoverImage = useCallback((id: string, coverImage: string) => {
+    setProgrammes((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, coverImage, updatedAt: new Date().toISOString() } : p
+      )
+    );
+  }, []);
+
   return (
     <ProgrammeStoreContext.Provider
-      value={{ programmes, addProgramme, deleteProgramme, updateProgrammeStatus }}
+      value={{ programmes, addProgramme, deleteProgramme, updateProgrammeStatus, updateCoverImage }}
     >
       {children}
     </ProgrammeStoreContext.Provider>

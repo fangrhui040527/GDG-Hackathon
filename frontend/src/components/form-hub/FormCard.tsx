@@ -1,8 +1,9 @@
 "use client";
 
-import { Copy, ExternalLink, BarChart2, Clock, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Copy, ExternalLink, BarChart2, Clock, CheckCircle2, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface FormCardProps {
   title: string;
@@ -25,11 +26,15 @@ export default function FormCard({
   lastUpdated,
   isActive = true,
 }: FormCardProps) {
-  const isInternal = url.startsWith("/");
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    const fullUrl = isInternal ? `${window.location.origin}${url}` : url;
+    const fullUrl = typeof window !== "undefined"
+      ? `${window.location.origin}${url}`
+      : url;
     navigator.clipboard.writeText(fullUrl).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -69,25 +74,14 @@ export default function FormCard({
 
       <div className="mt-auto flex flex-wrap gap-2">
         <Button size="sm" variant="outline" className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-slate-600 dark:text-white dark:hover:bg-slate-700" onClick={handleCopy}>
-          <Copy className="h-3.5 w-3.5" />
-          Copy Link
+          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied!" : "Copy Link"}
         </Button>
         <Button size="sm" variant="outline" className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-slate-600 dark:text-white dark:hover:bg-slate-700" asChild>
-          {isInternal ? (
-            <Link href={url}>
-              <ExternalLink className="h-3.5 w-3.5" />
-              Open Form
-            </Link>
-          ) : (
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-3.5 w-3.5" />
-              Open Form
-            </a>
-          )}
-        </Button>
-        <Button size="sm" variant="ghost" className="gap-1.5 text-slate-500 hover:text-violet-700 hover:bg-violet-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700">
-          <BarChart2 className="h-3.5 w-3.5" />
-          Responses
+          <Link href={url}>
+            <ExternalLink className="h-3.5 w-3.5" />
+            Open Form
+          </Link>
         </Button>
       </div>
     </div>

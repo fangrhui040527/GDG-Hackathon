@@ -20,13 +20,9 @@ class BigQueryService:
         )
 
     def _query(self, sql: str) -> list[dict]:
-        from google.cloud import bigquery
-
         client = self._client()
-        timeout = getattr(self.settings, "google_api_timeout_seconds", 10)
-        job_config = bigquery.QueryJobConfig(use_query_cache=True)
-        job = client.query(sql, job_config=job_config, timeout=timeout)
-        return [dict(row) for row in job.result(timeout=timeout)]
+        job = client.query(sql)
+        return [dict(row) for row in job.result()]
 
     def get_dashboard_metrics(self) -> dict[str, Any]:
         """Real BQ-backed dashboard metrics."""

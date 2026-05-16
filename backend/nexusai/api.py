@@ -1,20 +1,23 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import date, datetime, time
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from nexusai.config import get_settings
 from nexusai.database import (
+    AuditLog,
     Base,
     Company,
     Event,
+    EventParticipant,
     FollowUp,
     Mentor,
     Notification,
@@ -119,7 +122,7 @@ class EventOut(EventIn):
 class MatchRequest(BaseModel):
     event_id: int
     company_id: int
-    top_k: int = Field(default=10, ge=1, le=50)
+    top_k: int = 10
 
 
 class MatchOut(BaseModel):
@@ -261,6 +264,7 @@ class ProgrammeOut(BaseModel):
 def create_default_session_factory() -> sessionmaker[Session]:
     settings = get_settings()
     engine = create_database_engine(settings)
+    Base.metadata.create_all(engine)
     return create_session_factory(engine)
 
 
@@ -326,16 +330,6 @@ def create_app(
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
-
-    @app.get("/ready")
-    def ready(db: Db) -> dict[str, str]:
-        from sqlalchemy import text
-
-        try:
-            db.execute(text("select 1"))
-        except Exception as exc:
-            raise HTTPException(status_code=503, detail="database_unavailable") from exc
-        return {"status": "ready"}
 
     # ── Auth endpoints ────────────────────────────────────────
 
@@ -801,8 +795,6 @@ def create_app(
             support_needed=[s.strip() for s in (company.support_needed or "").split(",") if s.strip()],
             languages=[],
         )
-        mentor_limit = max(payload.top_k * 20, 100)
-        mentor_query = select(Mentor).order_by(Mentor.full_name).limit(mentor_limit)
         mentors = [
             MentorProfile(
                 id=str(mentor.mentor_id),
@@ -813,7 +805,7 @@ def create_app(
                 languages=[],
                 capacity_score=0.5,
             )
-            for mentor in db.scalars(mentor_query).all()
+            for mentor in db.scalars(select(Mentor)).all()
         ]
         recommendations = recommend_mentors(mentors, company_profile, payload.top_k)
 
@@ -901,8 +893,7 @@ def create_app(
                 "selection_id": final_state.get("selection_id"),
             }
         except Exception:
-            import logging
-
+            import traceback, logging
             logging.getLogger("nexusai").error("agent_chat error", exc_info=True)
             return {
                 "session_id": session_id,
@@ -1120,90 +1111,28 @@ def create_app(
 
     @app.get("/analytics/bq-dashboard")
     def bq_dashboard():
-        from nexusai.services.bigquery import FakeBigQueryService
+        from nexusai.services.bigquery import BigQueryService, FakeBigQueryService
 
         settings = get_settings()
         try:
-            sql = f"""
-            SELECT
-              (SELECT COUNT(*) FROM `{settings.bigquery_dataset}.mentors`) AS mentor_count,
-              (SELECT COUNT(*) FROM `{settings.bigquery_dataset}.companies`) AS company_count,
-              (SELECT COUNT(*) FROM `{settings.bigquery_dataset}.events`) AS event_count,
-              (SELECT COUNT(*) FROM `{settings.bigquery_dataset}.follow_ups`) AS followup_count,
-              (SELECT COUNT(*) FROM `{settings.bigquery_dataset}.selections`) AS selection_count,
-              (SELECT AVG(sentiment_score)
-                 FROM `{settings.bigquery_dataset}.follow_ups`
-                WHERE sentiment_score IS NOT NULL) AS avg_sentiment
-            """
-            result = mcp_client.bigquery_query(sql)
-            payload = _first_mcp_row(result)
-            if payload:
-                return _dashboard_from_bigquery_row(payload)
+            svc = BigQueryService(settings)
+            return svc.get_dashboard_metrics()
         except Exception:
-            pass
-        return FakeBigQueryService().get_dashboard_metrics()
+            return FakeBigQueryService().get_dashboard_metrics()
 
     @app.get("/analytics/outcome-trends")
     def outcome_trends():
-        from nexusai.services.bigquery import FakeBigQueryService
+        from nexusai.services.bigquery import BigQueryService, FakeBigQueryService
 
         settings = get_settings()
         try:
-            sql = f"""
-            SELECT
-              FORMAT_DATE('%Y-%m', follow_up_date) AS month,
-              outcome_label,
-              COUNT(*) AS count,
-              AVG(sentiment_score) AS avg_sentiment
-            FROM `{settings.bigquery_dataset}.follow_ups`
-            WHERE follow_up_date IS NOT NULL
-            GROUP BY month, outcome_label
-            ORDER BY month DESC
-            LIMIT 50
-            """
-            result = mcp_client.bigquery_query(sql)
-            rows = _mcp_rows(result)
-            if rows is not None:
-                return rows
+            svc = BigQueryService(settings)
+            return svc.get_outcome_trends()
         except Exception:
-            pass
-        return FakeBigQueryService().get_outcome_trends()
+            return FakeBigQueryService().get_outcome_trends()
 
     return app
 
 
 def count_rows(db: Session, model: type[Base]) -> int:
     return db.scalar(select(func.count()).select_from(model)) or 0
-
-
-def _mcp_rows(result: Any) -> list[dict[str, Any]] | None:
-    if isinstance(result, dict):
-        rows = result.get("rows")
-        if isinstance(rows, list):
-            return [row for row in rows if isinstance(row, dict)]
-    if isinstance(result, list):
-        return [row for row in result if isinstance(row, dict)]
-    return None
-
-
-def _first_mcp_row(result: Any) -> dict[str, Any] | None:
-    rows = _mcp_rows(result)
-    if rows:
-        return rows[0]
-    if isinstance(result, dict) and {"mentors", "companies", "events", "follow_ups"}.issubset(result):
-        return result
-    return None
-
-
-def _dashboard_from_bigquery_row(row: dict[str, Any]) -> dict[str, Any]:
-    if "mentors" in row:
-        return {**row, "source": row.get("source", "bigquery_mcp")}
-    return {
-        "mentors": row.get("mentor_count", 0),
-        "companies": row.get("company_count", 0),
-        "events": row.get("event_count", 0),
-        "follow_ups": row.get("followup_count", 0),
-        "selections": row.get("selection_count", 0),
-        "avg_sentiment": row.get("avg_sentiment"),
-        "source": "bigquery_mcp",
-    }
