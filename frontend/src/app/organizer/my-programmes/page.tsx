@@ -1,21 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { useProgrammeStore } from "@/lib/store";
+import { fetchProgrammes } from "@/lib/api";
+import type { Programme } from "@/types";
 
 export default function MyProgrammesPage() {
-  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
-  const [query, setQuery] = useState("");
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
 
-  const filtered = programmes.filter((p) =>
-    p.name.toLowerCase().includes(query.toLowerCase())
-  );
-
+  useEffect(() => {
+    fetchProgrammes().then(setProgrammes).catch(() => {});
+  }, []);
   return (
     <div className="flex flex-col">
       <div className="border-b border-slate-200 bg-white px-8 py-5">
@@ -47,23 +46,11 @@ export default function MyProgrammesPage() {
       </div>
 
       <div className="p-8">
-        {filtered.length === 0 ? (
-          <div className="py-20 text-center text-slate-400">
-            {query ? "No programmes match your search." : "No programmes yet. Create one!"}
-          </div>
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p) => (
-              <ProgrammeCard
-                key={p.id}
-                programme={p}
-                role="organizer"
-                onDelete={deleteProgramme}
-                onSubmit={(id) => updateProgrammeStatus(id, "submitted")}
-              />
-            ))}
-          </div>
-        )}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {programmes.map((p) => (
+            <ProgrammeCard key={p.id} programme={p} role="organizer" />
+          ))}
+        </div>
       </div>
     </div>
   );

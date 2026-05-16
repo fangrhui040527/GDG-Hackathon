@@ -1,4 +1,3 @@
-import { MOCK_RELATIONSHIPS } from "@/lib/mock-data";
 import RelationshipTable from "@/components/relationships/RelationshipTable";
 
 export default function AdminRelationshipsPage() {
@@ -11,7 +10,7 @@ export default function AdminRelationshipsPage() {
         </p>
       </div>
       <div className="p-8">
-        <RelationshipTable relationships={MOCK_RELATIONSHIPS} />
+        <RelationshipTable relationships={[]} />
       </div>
     </div>
   );

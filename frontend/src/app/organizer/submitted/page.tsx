@@ -1,18 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ArrowRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useProgrammeStore } from "@/lib/store";
+import { fetchProgrammes } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { STATUS_LABELS } from "@/lib/constants";
+import type { Programme } from "@/types";
 
 export default function SubmittedPage() {
-  const { programmes } = useProgrammeStore();
-  const submitted = programmes.filter((p) =>
-    ["submitted", "pending_review", "changes_requested"].includes(p.status)
-  );
+  const [submitted, setSubmitted] = useState<Programme[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes()
+      .then((all) => all.filter((p) => ["submitted", "pending_review", "changes_requested"].includes(p.status)))
+      .then(setSubmitted)
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex flex-col">
