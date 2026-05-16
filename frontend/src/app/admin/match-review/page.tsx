@@ -1,13 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_PROGRAMMES } from "@/lib/mock-data";
+import { useProgrammeStore } from "@/lib/store";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
 export default function AdminMatchReviewPage() {
-  const programmes = MOCK_PROGRAMMES.filter((p) =>
+  const { programmes: allProgrammes } = useProgrammeStore();
+  const programmes = allProgrammes.filter((p) =>
     ["approved", "published", "active"].includes(p.status)
   );
 

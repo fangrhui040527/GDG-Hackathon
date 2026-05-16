@@ -1,10 +1,14 @@
-import { BarChart3, TrendingUp, Users, Activity } from "lucide-react";
+"use client";
+
+import { BarChart3, TrendingUp, Activity } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
-import { ADMIN_STATS, MOCK_PROGRAMMES } from "@/lib/mock-data";
+import { useProgrammeStore } from "@/lib/store";
 
 export default function AdminReportsPage() {
-  const totalProgrammes = MOCK_PROGRAMMES.length;
-  const publishedCount = MOCK_PROGRAMMES.filter((p) => ["published", "active"].includes(p.status)).length;
+  const { programmes } = useProgrammeStore();
+  const totalProgrammes = programmes.length;
+  const publishedCount = programmes.filter((p) => ["published", "active"].includes(p.status)).length;
+  const activeCount = programmes.filter((p) => p.status === "active").length;
 
   return (
     <div className="flex flex-col">
@@ -16,8 +20,7 @@ export default function AdminReportsPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Total Programmes" value={totalProgrammes} icon={BarChart3} color="violet" />
           <StatCard label="Published" value={publishedCount} icon={TrendingUp} color="emerald" />
-          <StatCard label="Total Actors" value={ADMIN_STATS.totalActors} icon={Users} color="blue" />
-          <StatCard label="Active" value={ADMIN_STATS.activeProgrammes} icon={Activity} color="amber" />
+          <StatCard label="Active" value={activeCount} icon={Activity} color="amber" />
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
@@ -25,7 +28,7 @@ export default function AdminReportsPage() {
             <h3 className="text-base font-bold text-slate-900 mb-4">Programmes by Status</h3>
             <div className="space-y-3">
               {["draft", "submitted", "pending_review", "approved", "published", "active", "rejected"].map((status) => {
-                const count = MOCK_PROGRAMMES.filter((p) => p.status === status).length;
+                const count = programmes.filter((p) => p.status === status).length;
                 if (count === 0) return null;
                 return (
                   <div key={status} className="flex items-center justify-between">
@@ -39,8 +42,8 @@ export default function AdminReportsPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-6">
             <h3 className="text-base font-bold text-slate-900 mb-4">Programmes by Category</h3>
             <div className="space-y-3">
-              {Array.from(new Set(MOCK_PROGRAMMES.map((p) => p.category))).map((cat) => {
-                const count = MOCK_PROGRAMMES.filter((p) => p.category === cat).length;
+              {Array.from(new Set(programmes.map((p) => p.category))).map((cat) => {
+                const count = programmes.filter((p) => p.category === cat).length;
                 return (
                   <div key={cat} className="flex items-center justify-between">
                     <span className="text-sm text-slate-600">{cat}</span>

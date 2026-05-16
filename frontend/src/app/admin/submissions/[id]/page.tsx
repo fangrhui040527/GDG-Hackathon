@@ -9,13 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
-import { MOCK_PROGRAMMES, MOCK_MATCH_RESULTS, MOCK_SHORTLIST } from "@/lib/mock-data";
+import { MOCK_MATCH_RESULTS, MOCK_SHORTLIST } from "@/lib/mock-data";
 import { STATUS_LABELS } from "@/lib/constants";
+import { useProgrammeStore } from "@/lib/store";
 import type { MatchResult, ShortlistItem } from "@/types";
 
 export default function AdminSubmissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const programme = MOCK_PROGRAMMES.find((p) => p.id === id);
+  const { programmes, updateProgrammeStatus } = useProgrammeStore();
+  const programme = programmes.find((p) => p.id === id);
   if (!programme) notFound();
 
   const [adminShortlist, setAdminShortlist] = useState<ShortlistItem[]>(
@@ -69,19 +71,35 @@ export default function AdminSubmissionDetailPage({ params }: { params: Promise<
           </div>
           {/* Admin action buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50">
+            <Button
+              variant="outline" size="sm"
+              className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50"
+              onClick={() => updateProgrammeStatus(id, "changes_requested")}
+            >
               <RotateCcw className="h-4 w-4" />
               Request Changes
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50">
+            <Button
+              variant="outline" size="sm"
+              className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => updateProgrammeStatus(id, "rejected")}
+            >
               <XCircle className="h-4 w-4" />
               Reject
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+            <Button
+              variant="outline" size="sm"
+              className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+              onClick={() => updateProgrammeStatus(id, "approved")}
+            >
               <CheckCircle className="h-4 w-4" />
               Approve
             </Button>
-            <Button variant="navy" size="sm" className="gap-1.5">
+            <Button
+              variant="navy" size="sm"
+              className="gap-1.5"
+              onClick={() => updateProgrammeStatus(id, "published")}
+            >
               <Globe className="h-4 w-4" />
               Publish Programme
             </Button>

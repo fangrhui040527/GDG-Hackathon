@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   FolderOpen,
@@ -12,14 +14,22 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { MOCK_PROGRAMMES, ORGANIZER_STATS } from "@/lib/mock-data";
+import { useProgrammeStore } from "@/lib/store";
 
 export default function OrganizerDashboardPage() {
-  const allProgrammes = MOCK_PROGRAMMES;
+  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
+  const allProgrammes = programmes;
   const drafts = allProgrammes.filter((p) => p.status === "draft");
   const active = allProgrammes.filter((p) =>
     ["active", "published"].includes(p.status)
   );
+  const stats = {
+    total: allProgrammes.length,
+    draft: allProgrammes.filter((p) => p.status === "draft").length,
+    submitted: allProgrammes.filter((p) => ["submitted", "pending_review", "changes_requested"].includes(p.status)).length,
+    pendingReview: allProgrammes.filter((p) => p.status === "pending_review").length,
+    published: allProgrammes.filter((p) => ["published", "active"].includes(p.status)).length,
+  };
 
   return (
     <div className="flex flex-col">
@@ -51,35 +61,11 @@ export default function OrganizerDashboardPage() {
       <div className="p-8 space-y-8">
         {/* Stats row */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          <StatCard
-            label="Total Programmes"
-            value={ORGANIZER_STATS.totalProgrammes}
-            icon={FolderOpen}
-            color="pink"
-            variant="minimal"
-          />
-          <StatCard label="Draft" value={ORGANIZER_STATS.draft} icon={FilePenLine} color="violet" variant="minimal" />
-          <StatCard
-            label="Submitted to Admin"
-            value={ORGANIZER_STATS.submittedToAdmin}
-            icon={Send}
-            color="blue"
-            variant="minimal"
-          />
-          <StatCard
-            label="Pending Review"
-            value={ORGANIZER_STATS.pendingReview}
-            icon={Clock}
-            color="emerald"
-            variant="minimal"
-          />
-          <StatCard
-            label="Published"
-            value={ORGANIZER_STATS.published}
-            icon={Globe}
-            color="pink"
-            variant="minimal"
-          />
+          <StatCard label="Total Programmes" value={stats.total} icon={FolderOpen} color="pink" variant="minimal" />
+          <StatCard label="Draft" value={stats.draft} icon={FilePenLine} color="violet" variant="minimal" />
+          <StatCard label="Submitted to Admin" value={stats.submitted} icon={Send} color="blue" variant="minimal" />
+          <StatCard label="Pending Review" value={stats.pendingReview} icon={Clock} color="emerald" variant="minimal" />
+          <StatCard label="Published" value={stats.published} icon={Globe} color="pink" variant="minimal" />
         </div>
 
         {/* Recent Programmes */}
@@ -111,8 +97,12 @@ export default function OrganizerDashboardPage() {
 
             <TabsContent value="all">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {allProgrammes.map((p) => (
-                  <ProgrammeCard key={p.id} programme={p} role="organizer" />
+                {allProgrammes.length === 0 ? (
+                  <p className="col-span-3 py-12 text-center text-slate-400">No programmes yet.</p>
+                ) : allProgrammes.map((p) => (
+                  <ProgrammeCard key={p.id} programme={p} role="organizer"
+                    onDelete={deleteProgramme}
+                    onSubmit={(id) => updateProgrammeStatus(id, "submitted")} />
                 ))}
               </div>
             </TabsContent>
@@ -120,7 +110,9 @@ export default function OrganizerDashboardPage() {
             <TabsContent value="drafts">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {drafts.length > 0 ? (
-                  drafts.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer" />)
+                  drafts.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer"
+                    onDelete={deleteProgramme}
+                    onSubmit={(id) => updateProgrammeStatus(id, "submitted")} />)
                 ) : (
                   <p className="col-span-3 py-12 text-center text-slate-400">No drafts found.</p>
                 )}
@@ -130,7 +122,8 @@ export default function OrganizerDashboardPage() {
             <TabsContent value="active">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {active.length > 0 ? (
-                  active.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer" />)
+                  active.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer"
+                    onDelete={deleteProgramme} />)
                 ) : (
                   <p className="col-span-3 py-12 text-center text-slate-400">
                     No active programmes.

@@ -1,5 +1,9 @@
+"use client";
+
+import { use } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { notFound } from "next/navigation";
 import {
   CalendarDays,
@@ -11,20 +15,25 @@ import {
   ArrowRight,
   ChevronLeft,
   Target,
+  Trash2,
+  Send,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { MOCK_PROGRAMMES } from "@/lib/mock-data";
+import { useProgrammeStore } from "@/lib/store";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
-export default async function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const programme = MOCK_PROGRAMMES.find((p) => p.id === id);
+export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
+  const programme = programmes.find((p) => p.id === id);
   if (!programme) notFound();
 
   const req = programme.requirements;
+  const isDraft = programme.status === "draft";
 
   return (
     <div className="flex flex-col">
@@ -54,7 +63,17 @@ export default async function ProgrammeDetailPage({ params }: { params: Promise<
               </span>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap">
+            {isDraft && (
+              <Button
+                variant="outline"
+                className="gap-1.5 text-violet-700 border-violet-200 hover:bg-violet-50"
+                onClick={() => { updateProgrammeStatus(id, "submitted"); router.push("/organizer/submitted"); }}
+              >
+                <Send className="h-4 w-4" />
+                Submit to Admin
+              </Button>
+            )}
             <Button asChild variant="outline">
               <Link href={`/organizer/programmes/${programme.id}/ai-matching`}>
                 View AI Matching
@@ -65,6 +84,15 @@ export default async function ProgrammeDetailPage({ params }: { params: Promise<
                 View Shortlist
                 <ArrowRight className="h-4 w-4" />
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-red-500 border-red-100 hover:bg-red-50"
+              onClick={() => { deleteProgramme(id); router.push("/organizer/my-programmes"); }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
             </Button>
           </div>
         </div>

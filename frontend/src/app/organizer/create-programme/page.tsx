@@ -16,9 +16,12 @@ import {
 } from "@/components/ui/select";
 import { WIZARD_STEPS, PROGRAMME_CATEGORIES, COMPANY_STAGES, COUNTRIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useProgrammeStore } from "@/lib/store";
+import type { Programme, ProgrammeCategory, CompanyStage } from "@/types";
 
 export default function CreateProgrammePage() {
   const router = useRouter();
+  const { addProgramme } = useProgrammeStore();
   const [step, setStep] = useState(1);
   const totalSteps = WIZARD_STEPS.length;
 
@@ -50,7 +53,33 @@ export default function CreateProgrammePage() {
   };
 
   const handleSubmit = () => {
-    router.push("/organizer/programmes/prog-002/ai-matching");
+    const now = new Date().toISOString();
+    const newProgramme: Programme = {
+      id: `prog-${Date.now()}`,
+      name: form.name || "Untitled Programme",
+      description: form.description || "",
+      category: (form.category as ProgrammeCategory) || "Other",
+      status: "draft",
+      startDate: form.startDate || now.slice(0, 10),
+      endDate: form.endDate || undefined,
+      requirements: {
+        targetIndustry: form.targetIndustry,
+        targetCountry: form.targetCountry,
+        targetCompanyStage: (form.targetCompanyStage as CompanyStage) || "Any",
+        requiredMentors: Number(form.requiredMentors),
+        requiredCompanies: Number(form.requiredCompanies),
+        requiredPartners: Number(form.requiredPartners),
+        requiredServiceProviders: Number(form.requiredServiceProviders),
+        eligibilityCriteria: form.eligibilityCriteria,
+      },
+      progress: { label: "Draft Progress", value: 0, status: "0%" },
+      organiserId: "org-001",
+      organiserName: "Sarah Chen",
+      createdAt: now,
+      updatedAt: now,
+    };
+    addProgramme(newProgramme);
+    router.push("/organizer/my-programmes");
   };
 
   return (

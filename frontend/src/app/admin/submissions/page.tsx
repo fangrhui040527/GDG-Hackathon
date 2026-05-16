@@ -1,15 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_PROGRAMMES } from "@/lib/mock-data";
+import { useProgrammeStore } from "@/lib/store";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
 const SUBMISSION_STATUSES = ["submitted", "pending_review", "changes_requested", "approved", "rejected"];
 
 export default function AdminSubmissionsPage() {
-  const submissions = MOCK_PROGRAMMES.filter((p) =>
+  const { programmes } = useProgrammeStore();
+  const submissions = programmes.filter((p) =>
     SUBMISSION_STATUSES.includes(p.status)
   );
 

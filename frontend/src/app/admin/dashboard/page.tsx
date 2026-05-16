@@ -1,17 +1,27 @@
+"use client";
+
 import Link from "next/link";
-import { FileText, Globe, Activity, Users, TrendingUp, Plus } from "lucide-react";
+import { FileText, Globe, Activity, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { MOCK_PROGRAMMES, ADMIN_STATS } from "@/lib/mock-data";
+import { useProgrammeStore } from "@/lib/store";
 
 export default function AdminDashboardPage() {
-  const pendingProgrammes = MOCK_PROGRAMMES.filter((p) =>
+  const { programmes, deleteProgramme, updateProgrammeStatus } = useProgrammeStore();
+
+  const pendingProgrammes = programmes.filter((p) =>
     ["submitted", "pending_review", "changes_requested"].includes(p.status)
   );
-  const publishedProgrammes = MOCK_PROGRAMMES.filter((p) =>
+  const publishedProgrammes = programmes.filter((p) =>
     ["published", "active"].includes(p.status)
   );
+  const stats = {
+    pending: pendingProgrammes.length,
+    published: publishedProgrammes.length,
+    active: programmes.filter((p) => p.status === "active").length,
+    total: programmes.length,
+  };
 
   return (
     <div className="flex flex-col">
@@ -27,34 +37,10 @@ export default function AdminDashboardPage() {
       <div className="p-8 space-y-8">
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard
-            label="Pending Submissions"
-            value={ADMIN_STATS.pendingSubmissions}
-            icon={FileText}
-            color="pink"
-            variant="minimal"
-          />
-          <StatCard
-            label="Published"
-            value={ADMIN_STATS.publishedProgrammes}
-            icon={Globe}
-            color="emerald"
-            variant="minimal"
-          />
-          <StatCard
-            label="Active Programmes"
-            value={ADMIN_STATS.activeProgrammes}
-            icon={Activity}
-            color="blue"
-            variant="minimal"
-          />
-          <StatCard
-            label="Total Actors"
-            value={ADMIN_STATS.totalActors}
-            icon={Users}
-            color="violet"
-            variant="minimal"
-          />
+          <StatCard label="Pending Submissions" value={stats.pending} icon={FileText} color="pink" variant="minimal" />
+          <StatCard label="Published" value={stats.published} icon={Globe} color="emerald" variant="minimal" />
+          <StatCard label="Active Programmes" value={stats.active} icon={Activity} color="blue" variant="minimal" />
+          <StatCard label="Total Programmes" value={stats.total} icon={Users} color="violet" variant="minimal" />
         </div>
 
         {/* Pending Review */}
@@ -68,7 +54,8 @@ export default function AdminDashboardPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {pendingProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin"
+                  onDelete={deleteProgramme} />
               ))}
             </div>
           </section>
@@ -85,7 +72,8 @@ export default function AdminDashboardPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {publishedProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin"
+                  onDelete={deleteProgramme} />
               ))}
             </div>
           </section>

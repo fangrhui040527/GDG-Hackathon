@@ -1,13 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { CalendarDays, ArrowRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MOCK_PROGRAMMES } from "@/lib/mock-data";
+import { useProgrammeStore } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 import { STATUS_LABELS } from "@/lib/constants";
 
 export default function SubmittedPage() {
-  const submitted = MOCK_PROGRAMMES.filter((p) =>
+  const { programmes } = useProgrammeStore();
+  const submitted = programmes.filter((p) =>
     ["submitted", "pending_review", "changes_requested"].includes(p.status)
   );
 
