@@ -1,0 +1,5 @@
+[console_scripts]
+nexusai-agent = agent:main
+nexusai-api = nexusai.cli:run_api
+nexusai-init-db = nexusai.cli:init_db
+nexusai-seed-demo = nexusai.cli:seed_demo

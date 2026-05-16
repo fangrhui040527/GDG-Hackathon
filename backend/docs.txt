@@ -1,0 +1,3 @@
+﻿Alice is a software engineer.
+Bob is a data scientist.
+Charlie works on product design.
