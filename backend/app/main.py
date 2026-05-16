@@ -4,6 +4,7 @@ import sys
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import FastAPI
 
@@ -13,7 +14,16 @@ if __name__ == "__main__" and __package__ is None:
 
 from app.routes import router
 
-app = FastAPI(title="Vertex + BigQuery Backend", debug=True)
+app = FastAPI(title="NexusAI Backend", debug=True)
+
+app.add_middleware(
+	CORSMiddleware,
+	allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+	allow_credentials=True,
+	allow_methods=["*"],
+	allow_headers=["*"],
+)
+
 app.include_router(router)
 
 

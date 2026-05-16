@@ -56,17 +56,17 @@ export default function MatchResultCard({
               <Check className="h-4 w-4" />
               Added
             </Button>
-          ) : (
+          ) : onAddToShortlist ? (
             <Button
               size="sm"
               variant="navy"
               className="gap-1.5"
-              onClick={() => onAddToShortlist?.(result)}
+              onClick={() => onAddToShortlist(result)}
             >
               <Plus className="h-4 w-4" />
               Shortlist
             </Button>
-          )}
+          ) : null}
           <Button size="sm" variant="outline" className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50">
             <ExternalLink className="h-3.5 w-3.5" />
             View Profile

@@ -24,13 +24,6 @@ export default async function ShortlistPage({ params }: { params: Promise<{ id: 
       </div>
       <div className="p-8 max-w-2xl">
         <ShortlistPanel items={[]} readOnly />
-        <div className="mt-4">
-          <Button asChild variant="navy">
-            <Link href={`/organizer/programmes/${id}/ai-matching`}>
-              Edit Shortlist
-            </Link>
-          </Button>
-        </div>
       </div>
     </div>
   );

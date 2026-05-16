@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
 import { fetchProgrammeMatches } from "@/lib/api";
-import type { MatchResult, MatchResultsGroup, ShortlistItem } from "@/types";
+import type { MatchResultsGroup, ShortlistItem } from "@/types";
 
 export default function AIMatchingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -30,32 +30,6 @@ export default function AIMatchingPage({ params }: { params: Promise<{ id: strin
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleAdd = (result: MatchResult) => {
-    const existing = shortlist.find((s) => s.matchResultId === result.id);
-    if (existing) return;
-    const newItem: ShortlistItem = {
-      id: `sl-${Date.now()}`,
-      programmeId: id,
-      matchResultId: result.id,
-      actorId: result.actorId,
-      actorType: result.actorType,
-      actorName: result.actorName,
-      matchScore: result.matchScore,
-      addedAt: new Date().toISOString(),
-      addedBy: "Organiser",
-      isAdminSelected: false,
-    };
-    setShortlist((prev) => [...prev, newItem]);
-  };
-
-  const handleRemove = (itemId: string) => {
-    setShortlist((prev) => prev.filter((s) => s.id !== itemId));
-  };
-
-  const handleSubmit = () => {
-    router.push("/organizer/submitted");
-  };
-
   return (
     <div className="flex flex-col">
       <div className="border-b border-slate-200 bg-white px-8 py-5">
@@ -74,7 +48,7 @@ export default function AIMatchingPage({ params }: { params: Promise<{ id: strin
           <div>
             <h1 className="text-xl font-bold text-slate-900">AI Matching Results</h1>
             <p className="text-sm text-slate-500">
-              Review AI-recommended actors for this programme. Add to your shortlist, then submit to admin.
+              Review AI-recommended actors for this programme. The admin will manage the shortlist.
             </p>
           </div>
         </div>
@@ -93,14 +67,12 @@ export default function AIMatchingPage({ params }: { params: Promise<{ id: strin
               <MatchResultsSection
                 results={results}
                 shortlist={shortlist}
-                onAddToShortlist={handleAdd}
               />
             </div>
             <div>
               <ShortlistPanel
                 items={shortlist}
-                onRemove={handleRemove}
-                onSubmit={handleSubmit}
+                readOnly
               />
             </div>
           </div>
