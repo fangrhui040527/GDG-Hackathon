@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useFormStore } from "@/lib/form-store";
+import { registerCompany } from "@/lib/api";
 import { PROGRAMME_CATEGORIES, COMPANY_STAGES, COUNTRIES } from "@/lib/constants";
 
 const SUPPORT_OPTIONS = [
@@ -56,12 +57,20 @@ export default function CompanyRegistrationForm() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    addSubmission("company", form);
-    setSubmitted(true);
+    try {
+      await registerCompany({
+        ...form,
+        event_id: form.event_id ? Number(form.event_id) : null,
+      });
+      addSubmission("company", form);
+      setSubmitted(true);
+    } catch {
+      setErrors({ company_name: "Failed to register. Please try again." });
+    }
   };
 
   if (submitted) {

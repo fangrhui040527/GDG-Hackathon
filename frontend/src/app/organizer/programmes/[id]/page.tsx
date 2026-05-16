@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -32,8 +31,10 @@ import type { Programme } from "@/types";
 export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const router = useRouter();
   const [programme, setProgramme] = useState<Programme | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     fetchProgramme(id).then(setProgramme).catch((e) => console.error("Failed to load programme:", e));
@@ -46,9 +47,9 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
   const req = programme.requirements;
   const isDraft = programme.status === "draft";
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
+  function updateCoverImage(newUrl: string) {
+    setProgramme((prev) => prev ? { ...prev, coverImage: newUrl } : null);
+  }
 
   function handleImageFile(file: File) {
     if (!file.type.startsWith("image/")) return;
@@ -56,7 +57,7 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
-      updateCoverImage(id, dataUrl);
+      updateCoverImage(dataUrl);
       setUploading(false);
     };
     reader.readAsDataURL(file);
@@ -192,7 +193,7 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
                     size="sm"
                     variant="outline"
                     className="gap-1.5 bg-white/90 hover:bg-red-50 text-red-600 border-red-200"
-                    onClick={() => updateCoverImage(id, "")}
+                    onClick={() => updateCoverImage("")}
                   >
                     <X className="h-3.5 w-3.5" />
                     Remove

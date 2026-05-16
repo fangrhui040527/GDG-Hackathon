@@ -609,6 +609,13 @@ def create_app(
     @app.get("/programmes/{programme_id}/match")
     def match_programme(programme_id: int, db: Db):
         """Score all actors against a programme's target criteria."""
+        import traceback as _tb
+        try:
+            return _match_programme_impl(programme_id, db)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=_tb.format_exc()) from exc
+
+    def _match_programme_impl(programme_id: int, db: Session):
         prog = db.get(Programme, programme_id)
         if not prog:
             raise HTTPException(status_code=404, detail="Programme not found")
