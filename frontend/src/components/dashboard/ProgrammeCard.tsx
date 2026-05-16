@@ -35,9 +35,9 @@ export default function ProgrammeCard({ programme, role = "organizer" }: Program
   const gradient = CATEGORY_GRADIENTS[programme.category] ?? "from-violet-500 to-purple-700";
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm transition-all hover:shadow-md">
+    <div className="group flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-500">
       {/* Cover image */}
-      <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+      <div className="relative h-44 w-full overflow-hidden">
         {programme.coverImage ? (
           <Image
             src={programme.coverImage}
@@ -49,12 +49,14 @@ export default function ProgrammeCard({ programme, role = "organizer" }: Program
         ) : (
           <div className={`h-full w-full bg-gradient-to-br ${gradient}`} />
         )}
+        {/* Bottom fade into card */}
+        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/20 to-transparent" />
         {/* Badges overlay */}
         <div className="absolute left-3 top-3 flex gap-2">
           <StatusBadge status={programme.status} className="shadow-sm" />
         </div>
         <div className="absolute right-3 top-3">
-          <span className="rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-slate-700 shadow-sm">
+          <span className="rounded-full bg-white/90 dark:bg-slate-800/90 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
             {programme.category}
           </span>
         </div>
@@ -62,12 +64,12 @@ export default function ProgrammeCard({ programme, role = "organizer" }: Program
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-3 p-5">
-        <h3 className="font-bold leading-snug text-slate-900 group-hover:text-blue-700 transition-colors">
+        <h3 className="font-bold leading-snug text-slate-900 dark:text-slate-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
           {programme.name}
         </h3>
 
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
           <span>
             {programme.endDate
               ? formatDateRange(programme.startDate, programme.endDate)
@@ -76,36 +78,36 @@ export default function ProgrammeCard({ programme, role = "organizer" }: Program
         </div>
 
         {(programme as { location?: string }).location && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
             <span>{(programme as { location?: string }).location}</span>
           </div>
         )}
 
-        <p className="text-sm leading-relaxed text-slate-500">
+        <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
           {truncate(programme.description, 90)}
         </p>
 
         {/* Progress */}
         <div className="mt-auto pt-1">
           <div className="mb-1.5 flex items-center justify-between text-xs">
-            <span className="font-medium text-slate-600">{programme.progress.label}</span>
-            <span className="font-semibold text-slate-700">{programme.progress.status}</span>
+            <span className="font-medium text-slate-500 dark:text-slate-400">{programme.progress.label}</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">{programme.progress.status}</span>
           </div>
           <Progress
             value={programme.progress.value}
-            className="h-1.5 bg-slate-100 [&>div]:bg-slate-900"
+            className="h-1.5 bg-slate-200 dark:bg-slate-700 [&>div]:bg-slate-900 dark:[&>div]:bg-slate-300"
           />
         </div>
       </div>
 
       {/* Footer CTA */}
-      <div className="border-t border-slate-200 px-5 py-3">
+      <div className="border-t border-slate-100 dark:border-slate-700 px-5 py-3">
         {isDraft ? (
           <Button
             asChild
-            variant="outline"
-            className="w-full gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+            variant="navy"
+            className="w-full gap-2"
           >
             <Link href={detailHref}>
               <PencilLine className="h-4 w-4" />
@@ -115,8 +117,8 @@ export default function ProgrammeCard({ programme, role = "organizer" }: Program
         ) : (
           <Button
             asChild
-            variant="outline"
-            className="w-full gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+            variant="navy"
+            className="w-full gap-2"
           >
             <Link href={detailHref}>
               View Details

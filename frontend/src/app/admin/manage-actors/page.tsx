@@ -1,10 +1,6 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { fetchActors, toActorRow } from "@/lib/api";
+import { MOCK_ACTORS } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
-import type { ActorTableRow } from "@/types";
 
 const TYPE_LABELS: Record<string, string> = {
   company: "Company",
@@ -14,13 +10,6 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AdminManageActorsPage() {
-  const [actors, setActors] = useState<ActorTableRow[]>([]);
-
-  useEffect(() => {
-    fetchActors().then((data) => setActors(data.map(toActorRow)))
-      .catch((e) => console.error("API error:", e));
-  }, []);
-
   return (
     <div className="flex flex-col">
       <div className="border-b border-slate-200 bg-white px-8 py-5">
@@ -43,7 +32,7 @@ export default function AdminManageActorsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {actors.map((actor) => (
+              {MOCK_ACTORS.map((actor) => (
                 <tr key={actor.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-semibold text-slate-900 text-sm">{actor.name}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">

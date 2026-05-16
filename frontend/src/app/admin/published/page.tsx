@@ -1,24 +1,13 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { fetchProgrammes, toProgramme } from "@/lib/api";
+import { MOCK_PROGRAMMES } from "@/lib/mock-data";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
-import type { Programme } from "@/types";
 
 export default function AdminPublishedPage() {
-  const [allProgrammes, setAllProgrammes] = useState<Programme[]>([]);
-
-  useEffect(() => {
-    fetchProgrammes().then((data) => setAllProgrammes(data.map(toProgramme)))
-      .catch((e) => console.error("API error:", e));
-  }, []);
-
-  const published = allProgrammes.filter((p) =>
+  const published = MOCK_PROGRAMMES.filter((p) =>
     ["published", "active"].includes(p.status)
   );
 

@@ -1,22 +1,11 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { fetchProgrammes, toProgramme } from "@/lib/api";
-import type { Programme } from "@/types";
+import { MOCK_PROGRAMMES } from "@/lib/mock-data";
 
 export default function MyProgrammesPage() {
-  const [programmes, setProgrammes] = useState<Programme[]>([]);
-
-  useEffect(() => {
-    fetchProgrammes().then((data) => setProgrammes(data.map(toProgramme)))
-      .catch((e) => console.error("API error:", e));
-  }, []);
-
   return (
     <div className="flex flex-col">
       <div className="border-b border-slate-200 bg-white px-8 py-5">
@@ -44,7 +33,7 @@ export default function MyProgrammesPage() {
 
       <div className="p-8">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {programmes.map((p) => (
+          {MOCK_PROGRAMMES.map((p) => (
             <ProgrammeCard key={p.id} programme={p} role="organizer" />
           ))}
         </div>

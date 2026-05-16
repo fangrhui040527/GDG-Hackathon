@@ -3,14 +3,14 @@ import { STATUS_LABELS } from "@/lib/constants";
 import type { ProgrammeStatus } from "@/types";
 
 const STATUS_STYLES: Record<string, string> = {
-  draft: "bg-slate-100 text-slate-600",
-  submitted: "bg-blue-100 text-blue-700",
-  pending_review: "bg-cyan-100 text-cyan-700",
-  changes_requested: "bg-amber-100 text-amber-700",
-  approved: "bg-emerald-100 text-emerald-700",
-  published: "bg-teal-100 text-teal-700",
-  rejected: "bg-red-100 text-red-700",
-  active: "bg-emerald-100 text-emerald-700",
+  draft:             "bg-slate-600 text-white",
+  submitted:         "bg-blue-600 text-white",
+  pending_review:    "bg-cyan-500 text-white",
+  changes_requested: "bg-amber-500 text-white",
+  approved:          "bg-emerald-500 text-white",
+  published:         "bg-emerald-500 text-white",
+  rejected:          "bg-red-500 text-white",
+  active:            "bg-teal-500 text-white",
 };
 
 interface StatusBadgeProps {
