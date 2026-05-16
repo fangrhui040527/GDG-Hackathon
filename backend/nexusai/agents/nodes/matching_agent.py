@@ -45,7 +45,8 @@ def matching_node(state: AgentState, *, ai_service: Any, db_session: Any, mcp_cl
         languages=[],
     )
 
-    # Load all mentors
+    # Keep agent matching bounded; deeper retrieval should come from Vector Search/MCP signals.
+    mentor_query = select(Mentor).order_by(Mentor.full_name).limit(100)
     mentors = [
         MentorProfile(
             id=str(m.mentor_id),
@@ -56,7 +57,7 @@ def matching_node(state: AgentState, *, ai_service: Any, db_session: Any, mcp_cl
             languages=[],
             capacity_score=0.5,
         )
-        for m in db_session.scalars(select(Mentor)).all()
+        for m in db_session.scalars(mentor_query).all()
     ]
 
     # Score and rank
