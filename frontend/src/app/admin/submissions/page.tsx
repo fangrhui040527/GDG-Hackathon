@@ -1,26 +1,15 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { fetchProgrammes, toProgramme } from "@/lib/api";
+import { MOCK_PROGRAMMES } from "@/lib/mock-data";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
-import type { Programme } from "@/types";
 
 const SUBMISSION_STATUSES = ["submitted", "pending_review", "changes_requested", "approved", "rejected"];
 
 export default function AdminSubmissionsPage() {
-  const [programmes, setProgrammes] = useState<Programme[]>([]);
-
-  useEffect(() => {
-    fetchProgrammes().then((data) => setProgrammes(data.map(toProgramme)))
-      .catch((e) => console.error("API error:", e));
-  }, []);
-
-  const submissions = programmes.filter((p) =>
+  const submissions = MOCK_PROGRAMMES.filter((p) =>
     SUBMISSION_STATUSES.includes(p.status)
   );
 

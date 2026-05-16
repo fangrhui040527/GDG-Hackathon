@@ -1,6 +1,3 @@
-"use client";
-
-import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -18,28 +15,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { fetchProgramme, toProgramme } from "@/lib/api";
+import { MOCK_PROGRAMMES } from "@/lib/mock-data";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
-import type { Programme } from "@/types";
 
-export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const [programme, setProgramme] = useState<Programme | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const numId = Number(id);
-    if (!isNaN(numId)) {
-      fetchProgramme(numId).then((p) => setProgramme(toProgramme(p)))
-        .catch((e) => console.error("API error:", e))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, [id]);
-
-  if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
+export default async function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const programme = MOCK_PROGRAMMES.find((p) => p.id === id);
   if (!programme) notFound();
 
   const req = programme.requirements;

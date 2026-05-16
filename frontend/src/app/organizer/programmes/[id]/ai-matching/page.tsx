@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Sparkles } from "lucide-react";
@@ -9,7 +9,6 @@ import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
 import type { MatchResult, ShortlistItem } from "@/types";
 import { MOCK_MATCH_RESULTS, MOCK_SHORTLIST } from "@/lib/mock-data";
-import { fetchProgramme, toProgramme } from "@/lib/api";
 
 export default function AIMatchingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

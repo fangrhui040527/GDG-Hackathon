@@ -1,24 +1,13 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ArrowRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fetchProgrammes, toProgramme } from "@/lib/api";
+import { MOCK_PROGRAMMES } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import { STATUS_LABELS } from "@/lib/constants";
-import type { Programme } from "@/types";
 
 export default function SubmittedPage() {
-  const [allProgrammes, setAllProgrammes] = useState<Programme[]>([]);
-
-  useEffect(() => {
-    fetchProgrammes().then((data) => setAllProgrammes(data.map(toProgramme)))
-      .catch((e) => console.error("API error:", e));
-  }, []);
-
-  const submitted = allProgrammes.filter((p) =>
+  const submitted = MOCK_PROGRAMMES.filter((p) =>
     ["submitted", "pending_review", "changes_requested"].includes(p.status)
   );
 

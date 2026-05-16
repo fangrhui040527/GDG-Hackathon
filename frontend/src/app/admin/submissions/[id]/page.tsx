@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, CheckCircle, XCircle, RotateCcw, Globe } from "lucide-react";
@@ -9,28 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
-import { MOCK_MATCH_RESULTS, MOCK_SHORTLIST } from "@/lib/mock-data";
-import { fetchProgramme, toProgramme, approveProgramme, rejectProgramme, publishProgramme, requestChangesProgramme } from "@/lib/api";
+import { MOCK_PROGRAMMES, MOCK_MATCH_RESULTS, MOCK_SHORTLIST } from "@/lib/mock-data";
 import { STATUS_LABELS } from "@/lib/constants";
-import type { Programme, MatchResult, ShortlistItem } from "@/types";
+import type { MatchResult, ShortlistItem } from "@/types";
 
 export default function AdminSubmissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [programme, setProgramme] = useState<Programme | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const numId = Number(id);
-    if (!isNaN(numId)) {
-      fetchProgramme(numId).then((p) => setProgramme(toProgramme(p)))
-        .catch((e) => console.error("API error:", e))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, [id]);
-
-  if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
+  const programme = MOCK_PROGRAMMES.find((p) => p.id === id);
   if (!programme) notFound();
 
   const [adminShortlist, setAdminShortlist] = useState<ShortlistItem[]>(
@@ -84,23 +69,19 @@ export default function AdminSubmissionDetailPage({ params }: { params: Promise<
           </div>
           {/* Admin action buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50"
-              onClick={() => { const n = Number(id); if (!isNaN(n)) requestChangesProgramme(n).then(p => setProgramme(toProgramme(p))).catch(() => {}); }}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50">
               <RotateCcw className="h-4 w-4" />
               Request Changes
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
-              onClick={() => { const n = Number(id); if (!isNaN(n)) rejectProgramme(n).then(p => setProgramme(toProgramme(p))).catch(() => {}); }}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50">
               <XCircle className="h-4 w-4" />
               Reject
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-              onClick={() => { const n = Number(id); if (!isNaN(n)) approveProgramme(n).then(p => setProgramme(toProgramme(p))).catch(() => {}); }}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
               <CheckCircle className="h-4 w-4" />
               Approve
             </Button>
-            <Button variant="navy" size="sm" className="gap-1.5"
-              onClick={() => { const n = Number(id); if (!isNaN(n)) publishProgramme(n).then(p => setProgramme(toProgramme(p))).catch(() => {}); }}>
+            <Button variant="navy" size="sm" className="gap-1.5">
               <Globe className="h-4 w-4" />
               Publish Programme
             </Button>

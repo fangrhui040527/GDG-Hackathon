@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createProgramme } from "@/lib/api";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -50,27 +49,8 @@ export default function CreateProgrammePage() {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = async () => {
-    try {
-      const created = await createProgramme({
-        name: form.name,
-        description: form.description,
-        category: form.category,
-        start_date: form.startDate || undefined,
-        end_date: form.endDate || undefined,
-        target_industry: form.targetIndustry,
-        target_country: form.targetCountry,
-        target_company_stage: form.targetCompanyStage,
-        required_mentors: form.requiredMentors,
-        required_companies: form.requiredCompanies,
-        required_partners: form.requiredPartners,
-        required_service_providers: form.requiredServiceProviders,
-        eligibility_criteria: form.eligibilityCriteria,
-      });
-      router.push(`/organizer/programmes/${created.programme_id}/ai-matching`);
-    } catch {
-      router.push("/organizer/dashboard");
-    }
+  const handleSubmit = () => {
+    router.push("/organizer/programmes/prog-002/ai-matching");
   };
 
   return (
