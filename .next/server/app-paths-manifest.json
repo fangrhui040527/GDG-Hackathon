@@ -1,4 +1,8 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/login/page": "app/login/page.js",
-  "/organizer/dashboard/page": "app/organizer/dashboard/page.js"
+  "/organizer/dashboard/page": "app/organizer/dashboard/page.js",
+  "/organizer/form-hub/page": "app/organizer/form-hub/page.js",
+  "/organizer/my-programmes/page": "app/organizer/my-programmes/page.js",
+  "/organizer/submitted/page": "app/organizer/submitted/page.js"
 }

@@ -57,3 +57,43 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===== DARK MODE — page content overrides =====
+   Scoped to <main> so sidebar's own bg-white/dark active states
+   are never accidentally overridden.
+   Specificity (.dark main .class = 0,3,0) beats Tailwind utilities (0,1,0). */
+
+/* Backgrounds */
+.dark main .bg-white          { background-color: rgb(30 41 59);  }   /* slate-800  */
+.dark main .bg-slate-50       { background-color: rgb(15 23 42);  }   /* slate-900  */
+.dark main .bg-slate-100      { background-color: rgb(15 23 42);  }   /* slate-900  */
+.dark main .bg-gray-100       { background-color: rgb(15 23 42);  }   /* slate-900  */
+
+/* Borders */
+.dark main .border-slate-100  { border-color: rgb(51 65 85);   }      /* slate-700  */
+.dark main .border-slate-200  { border-color: rgb(51 65 85);   }      /* slate-700  */
+.dark main .border-slate-300  { border-color: rgb(71 85 105);  }      /* slate-600  */
+.dark main .border-violet-100 { border-color: rgb(51 65 85);   }      /* slate-700  */
+
+/* Text */
+.dark main .text-slate-900    { color: rgb(241 245 249); }            /* slate-100  */
+.dark main .text-slate-800    { color: rgb(226 232 240); }            /* slate-200  */
+.dark main .text-slate-700    { color: rgb(203 213 225); }            /* slate-300  */
+.dark main .text-slate-600    { color: rgb(148 163 184); }            /* slate-400  */
+.dark main .text-slate-500    { color: rgb(148 163 184); }            /* slate-400  */
+.dark main .text-slate-400    { color: rgb(148 163 184); }            /* slate-400 — keep visible */
+
+/* Table row hover */
+.dark main tr:hover           { background-color: rgb(30 41 59); }
+
+/* Input / form fields */
+.dark main input,
+.dark main textarea,
+.dark main select {
+  background-color: rgb(15 23 42);
+  border-color:     rgb(51 65 85);
+  color:            rgb(241 245 249);
+}
+.dark main input::placeholder,
+.dark main textarea::placeholder { color: rgb(100 116 139); }
+
