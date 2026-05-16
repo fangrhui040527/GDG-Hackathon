@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WIZARD_STEPS, PROGRAMME_CATEGORIES, COMPANY_STAGES, COUNTRIES } from "@/lib/constants";
+import { createProgramme } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export default function CreateProgrammePage() {
@@ -49,8 +50,28 @@ export default function CreateProgrammePage() {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = () => {
-    router.push("/organizer/programmes/prog-002/ai-matching");
+  const handleSubmit = async () => {
+    try {
+      const dto = await createProgramme({
+        name: form.name,
+        description: form.description,
+        category: form.category,
+        start_date: form.startDate,
+        end_date: form.endDate || null,
+        target_industry: form.targetIndustry,
+        target_country: form.targetCountry,
+        target_company_stage: form.targetCompanyStage,
+        required_mentors: form.requiredMentors,
+        required_companies: form.requiredCompanies,
+        required_partners: form.requiredPartners,
+        required_service_providers: form.requiredServiceProviders,
+        eligibility_criteria: form.eligibilityCriteria,
+        organiser_name: "Organiser",
+      });
+      router.push(`/organizer/programmes/${dto.programme_id}/ai-matching`);
+    } catch {
+      alert("Failed to create programme");
+    }
   };
 
   return (

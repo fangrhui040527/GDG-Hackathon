@@ -1,15 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_PROGRAMMES } from "@/lib/mock-data";
+import { fetchProgrammes } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import type { Programme } from "@/types";
 
 export default function AdminPublishedPage() {
-  const published = MOCK_PROGRAMMES.filter((p) =>
-    ["published", "active"].includes(p.status)
-  );
+  const [published, setPublished] = useState<Programme[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes()
+      .then((all) => all.filter((p) => ["published", "active"].includes(p.status)))
+      .then(setPublished)
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex flex-col">

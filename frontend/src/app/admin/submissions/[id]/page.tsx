@@ -1,26 +1,29 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ChevronLeft, CheckCircle, XCircle, RotateCcw, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
-import { MOCK_PROGRAMMES, MOCK_MATCH_RESULTS, MOCK_SHORTLIST } from "@/lib/mock-data";
+import { fetchProgramme, approveProgramme, rejectProgramme, publishProgramme, requestChangesProgramme, toProgramme } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/constants";
-import type { MatchResult, ShortlistItem } from "@/types";
+import type { Programme, MatchResult, ShortlistItem } from "@/types";
 
 export default function AdminSubmissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const programme = MOCK_PROGRAMMES.find((p) => p.id === id);
-  if (!programme) notFound();
+  const [programme, setProgramme] = useState<Programme | null>(null);
+  const [adminShortlist, setAdminShortlist] = useState<ShortlistItem[]>([]);
 
-  const [adminShortlist, setAdminShortlist] = useState<ShortlistItem[]>(
-    MOCK_SHORTLIST.filter((s) => s.programmeId === id)
-  );
+  useEffect(() => {
+    fetchProgramme(id).then(setProgramme).catch(() => {});
+  }, [id]);
+
+  if (!programme) {
+    return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
+  }
 
   const handleAdd = (result: MatchResult) => {
     const existing = adminShortlist.find((s) => s.matchResultId === result.id);
@@ -69,19 +72,19 @@ export default function AdminSubmissionDetailPage({ params }: { params: Promise<
           </div>
           {/* Admin action buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50">
+            <Button onClick={() => requestChangesProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50">
               <RotateCcw className="h-4 w-4" />
               Request Changes
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50">
+            <Button onClick={() => rejectProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50">
               <XCircle className="h-4 w-4" />
               Reject
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+            <Button onClick={() => approveProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
               <CheckCircle className="h-4 w-4" />
               Approve
             </Button>
-            <Button variant="navy" size="sm" className="gap-1.5">
+            <Button onClick={() => publishProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="navy" size="sm" className="gap-1.5">
               <Globe className="h-4 w-4" />
               Publish Programme
             </Button>
@@ -109,7 +112,7 @@ export default function AdminSubmissionDetailPage({ params }: { params: Promise<
             <div>
               <h2 className="mb-3 font-semibold text-slate-900">AI Matching Results</h2>
               <MatchResultsSection
-                results={MOCK_MATCH_RESULTS}
+                results={{ companies: [], mentors: [], partners: [], serviceProviders: [] }}
                 shortlist={adminShortlist}
                 onAddToShortlist={handleAdd}
               />

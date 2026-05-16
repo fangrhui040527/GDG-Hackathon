@@ -1,17 +1,31 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Globe, Activity, Users, TrendingUp, Plus } from "lucide-react";
+import { FileText, Globe, Activity, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { MOCK_PROGRAMMES, ADMIN_STATS } from "@/lib/mock-data";
+import { fetchProgrammes, fetchActors } from "@/lib/api";
+import type { Programme } from "@/types";
+import type { ActorTableRow } from "@/types/actor";
 
 export default function AdminDashboardPage() {
-  const pendingProgrammes = MOCK_PROGRAMMES.filter((p) =>
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [actors, setActors] = useState<ActorTableRow[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes().then(setProgrammes).catch(() => {});
+    fetchActors().then(setActors).catch(() => {});
+  }, []);
+
+  const pendingProgrammes = programmes.filter((p) =>
     ["submitted", "pending_review", "changes_requested"].includes(p.status)
   );
-  const publishedProgrammes = MOCK_PROGRAMMES.filter((p) =>
+  const publishedProgrammes = programmes.filter((p) =>
     ["published", "active"].includes(p.status)
   );
+  const activeProgrammes = programmes.filter((p) => p.status === "active");
 
   return (
     <div className="flex flex-col">
@@ -29,28 +43,28 @@ export default function AdminDashboardPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard
             label="Pending Submissions"
-            value={ADMIN_STATS.pendingSubmissions}
+            value={pendingProgrammes.length}
             icon={FileText}
             color="pink"
             variant="minimal"
           />
           <StatCard
             label="Published"
-            value={ADMIN_STATS.publishedProgrammes}
+            value={publishedProgrammes.length}
             icon={Globe}
             color="emerald"
             variant="minimal"
           />
           <StatCard
             label="Active Programmes"
-            value={ADMIN_STATS.activeProgrammes}
+            value={activeProgrammes.length}
             icon={Activity}
             color="blue"
             variant="minimal"
           />
           <StatCard
             label="Total Actors"
-            value={ADMIN_STATS.totalActors}
+            value={actors.length}
             icon={Users}
             color="violet"
             variant="minimal"

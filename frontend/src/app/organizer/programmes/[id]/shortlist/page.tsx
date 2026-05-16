@@ -2,11 +2,9 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
-import { MOCK_SHORTLIST } from "@/lib/mock-data";
 
 export default async function ShortlistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const shortlist = MOCK_SHORTLIST.filter((s) => s.programmeId === id);
 
   return (
     <div className="flex flex-col">
@@ -25,7 +23,7 @@ export default async function ShortlistPage({ params }: { params: Promise<{ id: 
         </p>
       </div>
       <div className="p-8 max-w-2xl">
-        <ShortlistPanel items={shortlist} readOnly />
+        <ShortlistPanel items={[]} readOnly />
         <div className="mt-4">
           <Button asChild variant="navy">
             <Link href={`/organizer/programmes/${id}/ai-matching`}>

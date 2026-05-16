@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FolderOpen,
@@ -12,11 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { MOCK_PROGRAMMES, ORGANIZER_STATS } from "@/lib/mock-data";
+import { fetchProgrammes } from "@/lib/api";
+import type { Programme } from "@/types";
 
 export default function OrganizerDashboardPage() {
-  const allProgrammes = MOCK_PROGRAMMES;
+  const [allProgrammes, setAllProgrammes] = useState<Programme[]>([]);
+
+  useEffect(() => {
+    fetchProgrammes().then(setAllProgrammes).catch(() => {});
+  }, []);
+
   const drafts = allProgrammes.filter((p) => p.status === "draft");
+  const submitted = allProgrammes.filter((p) => p.status === "submitted");
+  const pendingReview = allProgrammes.filter((p) => p.status === "pending_review");
+  const published = allProgrammes.filter((p) => ["published", "active"].includes(p.status));
   const active = allProgrammes.filter((p) =>
     ["active", "published"].includes(p.status)
   );
@@ -53,29 +65,29 @@ export default function OrganizerDashboardPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
             label="Total Programmes"
-            value={ORGANIZER_STATS.totalProgrammes}
+            value={allProgrammes.length}
             icon={FolderOpen}
             color="pink"
             variant="minimal"
           />
-          <StatCard label="Draft" value={ORGANIZER_STATS.draft} icon={FilePenLine} color="violet" variant="minimal" />
+          <StatCard label="Draft" value={drafts.length} icon={FilePenLine} color="violet" variant="minimal" />
           <StatCard
             label="Submitted to Admin"
-            value={ORGANIZER_STATS.submittedToAdmin}
+            value={submitted.length}
             icon={Send}
             color="blue"
             variant="minimal"
           />
           <StatCard
             label="Pending Review"
-            value={ORGANIZER_STATS.pendingReview}
+            value={pendingReview.length}
             icon={Clock}
             color="emerald"
             variant="minimal"
           />
           <StatCard
             label="Published"
-            value={ORGANIZER_STATS.published}
+            value={published.length}
             icon={Globe}
             color="pink"
             variant="minimal"

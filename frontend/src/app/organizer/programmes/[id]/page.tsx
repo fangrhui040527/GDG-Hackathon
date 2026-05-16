@@ -1,6 +1,8 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
 import {
   CalendarDays,
   Globe,
@@ -15,14 +17,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { MOCK_PROGRAMMES } from "@/lib/mock-data";
+import { fetchProgramme } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import type { Programme } from "@/types";
 
-export default async function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const programme = MOCK_PROGRAMMES.find((p) => p.id === id);
-  if (!programme) notFound();
+export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [programme, setProgramme] = useState<Programme | null>(null);
+
+  useEffect(() => {
+    fetchProgramme(id).then(setProgramme).catch(() => {});
+  }, [id]);
+
+  if (!programme) {
+    return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
+  }
 
   const req = programme.requirements;
 
