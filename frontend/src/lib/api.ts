@@ -258,8 +258,32 @@ export async function registerServiceProvider(data: Record<string, unknown>): Pr
   return apiPost("/profiles/service-providers", data);
 }
 
+function toMatchResult(raw: Record<string, unknown>, actorType: import("@/types").ActorType): import("@/types").MatchResult {
+  const score = typeof raw.score === "number" ? Math.round(raw.score * 100) : Number(raw.score ?? 0);
+  const normalised = score > 1 ? score : Math.round(score * 100);
+  return {
+    id: String(raw.entity_id ?? raw.id ?? Math.random()),
+    actorId: String(raw.entity_id ?? raw.id ?? ""),
+    actorType,
+    actorName: String(raw.entity_name ?? raw.actorName ?? "Unknown"),
+    profileSummary: String(raw.rationale ?? raw.profileSummary ?? ""),
+    matchScore: normalised,
+    matchTier: normalised >= 85 ? "Excellent" : normalised >= 70 ? "Strong" : normalised >= 55 ? "Good" : "Fair",
+    aiExplanation: String(raw.rationale ?? raw.aiExplanation ?? ""),
+    availabilityLabel: "Available",
+    isAvailable: true,
+    tags: Array.isArray(raw.fit_factors) ? (raw.fit_factors as string[]) : Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
+  };
+}
+
 export async function fetchProgrammeMatches(programmeId: string): Promise<import("@/types").MatchResultsGroup> {
-  return apiGet(`/programmes/${programmeId}/match`);
+  const raw = await apiGet<Record<string, unknown[]>>(`/programmes/${programmeId}/match`);
+  return {
+    companies:        ((raw.companies        ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "company")),
+    mentors:          ((raw.mentors          ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "mentor")),
+    partners:         ((raw.partners         ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "partner")),
+    serviceProviders: ((raw.serviceProviders ?? raw.service_providers ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "service_provider")),
+  };
 }
 
 /* ── Dashboard API ───────────────────────────────────────────── */

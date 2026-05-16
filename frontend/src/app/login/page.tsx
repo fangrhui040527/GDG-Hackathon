@@ -197,7 +197,13 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
+          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="font-semibold text-violet-600 dark:text-violet-400 hover:underline">
+              Sign up
+            </Link>
+          </p>
+          <p className="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
             Demo credentials are pre-filled. Choose a role and sign in.
           </p>
       </div>
