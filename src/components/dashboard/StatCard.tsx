@@ -6,7 +6,8 @@ interface StatCardProps {
   value: number | string;
   icon: LucideIcon;
   highlight?: boolean;
-  color?: "violet" | "pink" | "blue" | "emerald" | "amber";
+  color?: "violet" | "pink" | "blue" | "emerald" | "amber" | "slate";
+  variant?: "solid" | "minimal";
 }
 
 const colorMap = {
@@ -48,15 +49,54 @@ const colorMap = {
 };
 
 const defaultStyle = {
-  card: "bg-white border border-violet-100",
-  icon: "bg-violet-50",
-  iconColor: "text-violet-500",
+  card: "bg-white border border-slate-200",
+  icon: "bg-slate-50",
+  iconColor: "text-slate-600",
   label: "text-slate-500",
   value: "text-slate-900",
 };
 
-export default function StatCard({ label, value, icon: Icon, highlight, color }: StatCardProps) {
-  const style = color ? colorMap[color] : highlight ? colorMap.violet : defaultStyle;
+const minimalAccentMap = {
+  violet: "border-t-violet-500 text-violet-600",
+  pink: "border-t-slate-900 text-slate-900",
+  blue: "border-t-cyan-500 text-cyan-600",
+  emerald: "border-t-teal-500 text-teal-600",
+  amber: "border-t-amber-500 text-amber-600",
+  slate: "border-t-slate-300 text-slate-500",
+};
+
+export default function StatCard({
+  label,
+  value,
+  icon: Icon,
+  highlight,
+  color,
+  variant = "solid",
+}: StatCardProps) {
+  if (variant === "minimal") {
+    const accentKey = color ?? (highlight ? "violet" : "slate");
+    const accent = minimalAccentMap[accentKey as keyof typeof minimalAccentMap] ?? minimalAccentMap.slate;
+
+    return (
+      <div
+        className={cn(
+          "flex flex-col gap-4 rounded-2xl border border-slate-200 border-t-4 bg-white p-5 shadow-sm",
+          accent
+        )}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50">
+            <Icon className={cn("h-5 w-5", accent)} />
+          </div>
+        </div>
+        <p className="text-3xl font-bold text-slate-900">{value}</p>
+      </div>
+    );
+  }
+
+  const solidColor = color && color in colorMap ? (color as keyof typeof colorMap) : undefined;
+  const style = solidColor ? colorMap[solidColor] : highlight ? colorMap.violet : defaultStyle;
 
   return (
     <div className={cn("flex flex-col gap-3 rounded-2xl p-5 shadow-sm", style.card)}>

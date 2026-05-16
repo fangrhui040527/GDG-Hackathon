@@ -57,7 +57,7 @@ export default function FormCard({
         )}
         {lastUpdated && (
           <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-pink-400" />
+            <Clock className="h-3.5 w-3.5 text-slate-400" />
             Updated {lastUpdated}
           </span>
         )}
