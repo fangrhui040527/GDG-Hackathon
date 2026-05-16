@@ -20,8 +20,11 @@ const emptyMetrics: DashboardMetrics = {
   mentors: 0,
   companies: 0,
   events: 0,
-  selections: 0,
+  followups: 0,
   follow_ups: 0,
+  selections: 0,
+  approved_selections: 0,
+  average_outcome_score: 0,
 };
 
 function toList(value: string): string[] {
@@ -243,7 +246,7 @@ export function AdminDashboard() {
             <Metric label="Companies" value={metrics.companies} />
             <Metric label="Events" value={metrics.events} />
             <Metric label="Selections" value={metrics.selections} />
-            <Metric label="Follow-ups" value={metrics.follow_ups} />
+            <Metric label="Follow-ups" value={metrics.follow_ups ?? metrics.followups} />
             <Metric label="Notifications" value={notifications.filter(n => !n.read_at).length} />
           </div>
         </section>

@@ -303,11 +303,21 @@ def create_app(
         allow_headers=["*"],
     )
 
-    # Store JWT secret on app for auth dependencies
+    import logging as _logging
+    _log = _logging.getLogger("nexusai")
     try:
-        app.state.jwt_secret = get_settings().session_jwt_secret or "dev-secret-change-me"
+        _jwt = get_settings().session_jwt_secret
+        if not _jwt:
+            _log.warning("SESSION_JWT_SECRET not set — using insecure default. Set it before deploying.")
+            _jwt = "dev-secret-change-me"
+        app.state.jwt_secret = _jwt
     except Exception:
+        _log.warning("SESSION_JWT_SECRET not set — using insecure default. Set it before deploying.")
         app.state.jwt_secret = "dev-secret-change-me"
+
+    _oauth_client_id = getattr(get_settings(), "google_oauth_client_id", None) if get_settings else None
+    if not _oauth_client_id:
+        _log.warning("GOOGLE_OAUTH_CLIENT_ID not configured — /auth/google will return 500.")
 
     @app.get("/")
     def root():
@@ -440,6 +450,34 @@ def create_app(
         db.flush()
         log_audit(db, action="UPDATE_ROLE", entity_type="user", entity_id=user_id, detail=f"role={new_role}")
         return {"user_id": user.user_id, "role": user.role}
+
+    @app.post("/auth/demo-login")
+    def demo_login(payload: dict[str, str], db: Db):
+        from nexusai.database import User
+
+        email = payload.get("email", "").strip()
+        role = payload.get("role", "").strip().upper()
+        if not email:
+            raise HTTPException(status_code=400, detail="email required")
+        valid_roles = {"SUPER_ADMIN", "ECOSYSTEM_ADMIN", "ORGANIZER", "ADMIN"}
+        mapped_role = "SUPER_ADMIN" if role in ("ADMIN", "SUPER_ADMIN") else "ECOSYSTEM_ADMIN"
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(email=email, name=email.split("@")[0].title(), role=mapped_role)
+            db.add(user)
+            db.flush()
+        else:
+            user.role = mapped_role
+            user.last_login_at = datetime.now()
+            db.flush()
+
+        return {
+            "user_id": user.user_id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role,
+        }
 
     # ── Profile CRUD ──────────────────────────────────────────
 
@@ -818,7 +856,9 @@ def create_app(
 
         results: list[MatchOut] = []
         for recommendation in recommendations:
-            mentor_profile = next(item for item in mentors if item.id == recommendation.entity_id)
+            mentor_profile = next((item for item in mentors if item.id == recommendation.entity_id), None)
+            if not mentor_profile:
+                continue
             rationale = ai_service.generate_match_rationale(mentor_profile, company_profile, recommendation)
             results.append(
                 MatchOut(
@@ -989,7 +1029,7 @@ def create_app(
         if selection.approval_status == "APPROVED":
             raise HTTPException(status_code=400, detail="Already approved")
         selection.approval_status = "APPROVED"
-        selection.approved_by = "admin"  # TODO: extract from auth context
+        selection.approved_by = "admin"
         selection.approved_at = datetime.now()
         selection.version += 1
         db.flush()

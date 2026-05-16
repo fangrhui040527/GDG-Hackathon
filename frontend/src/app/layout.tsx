@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ProgrammeStoreProvider } from "@/lib/store";
 import { FormStoreProvider } from "@/lib/form-store";
+import ChatBubble from "@/components/chat-bubble";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -24,7 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <ProgrammeStoreProvider>
-          <FormStoreProvider>{children}</FormStoreProvider>
+          <FormStoreProvider>
+            {children}
+            <ChatBubble />
+          </FormStoreProvider>
         </ProgrammeStoreProvider>
       </body>
     </html>

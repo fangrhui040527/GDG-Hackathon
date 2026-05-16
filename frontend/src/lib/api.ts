@@ -41,6 +41,7 @@ export type DashboardMetrics = {
   companies: number;
   events: number;
   followups: number;
+  follow_ups?: number;
   selections: number;
   approved_selections: number;
   average_outcome_score: number;
@@ -284,3 +285,78 @@ export async function uploadMentorCv(mentorId: string, file: File) {
     extracted_text: string;
   }>;
 }
+
+/* ── Agent Chat ────────────────────────────────────────────── */
+
+export type AgentChatResponse = {
+  session_id: string;
+  intent: string;
+  reply: string;
+};
+
+export async function streamAgentChat(
+  message: string,
+  sessionId: string,
+  onNode: (data: Record<string, unknown>) => void,
+  onDone?: () => void
+): Promise<void> {
+  const response = await fetch(`${API_URL}/agent/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, session_id: sessionId }),
+  });
+  if (!response.ok || !response.body) throw new Error("Stream failed");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          onNode(data);
+        } catch {}
+      }
+    }
+  }
+  onDone?.();
+}
+
+/* ── Selection & Notification types ────────────────────────── */
+
+export type SelectionItem = {
+  id: number;
+  entity_type: string;
+  entity_id: number;
+  entity_name: string | null;
+  match_score: number | null;
+  rationale: string | null;
+};
+
+export type Selection = {
+  selection_id: number;
+  event_id: number | null;
+  purpose: string | null;
+  approval_status: string;
+  ai_generated: boolean;
+  approved_by: string | null;
+  approved_at: string | null;
+  version: number;
+  items: SelectionItem[];
+  created_at: string;
+};
+
+export type Notification = {
+  notification_id: number;
+  user_email: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  read_at: string | null;
+  created_at: string;
+};

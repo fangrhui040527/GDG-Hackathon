@@ -199,7 +199,7 @@ class Company(Base, TimestampMixin):
 class Partner(Base, TimestampMixin):
     __tablename__ = "partner"
 
-    partner_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    partner_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     organisation_name: Mapped[str] = mapped_column(String(255), nullable=False)
     organisation_type: Mapped[OrgTypeEnum] = mapped_column(
         Enum(OrgTypeEnum, name="org_type_enum", create_type=False), nullable=False
@@ -220,7 +220,7 @@ class Partner(Base, TimestampMixin):
 class ServiceProvider(Base, TimestampMixin):
     __tablename__ = "service_provider"
 
-    sp_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sp_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     organisation_name: Mapped[str] = mapped_column(String(255), nullable=False)
     service_provider_type: Mapped[ServiceProviderTypeEnum] = mapped_column(
         Enum(ServiceProviderTypeEnum, name="service_provider_type_enum", create_type=False, values_callable=lambda obj: [e.value for e in obj]),
@@ -266,6 +266,9 @@ class FollowUp(Base, TimestampMixin):
     attendees: Mapped[Optional[str]] = mapped_column(Text)
     person_recorded: Mapped[Optional[str]] = mapped_column(String(255))
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.company_id"), nullable=False)
+
+    sentiment_score: Mapped[Optional[float]] = mapped_column(nullable=True)
+    outcome_label: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     company: Mapped[Company] = relationship(back_populates="follow_ups")
 

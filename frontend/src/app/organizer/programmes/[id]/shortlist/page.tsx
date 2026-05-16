@@ -1,10 +1,54 @@
+"use client";
+
+import { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
+import type { ShortlistItem } from "@/types";
 
-export default async function ShortlistPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+export default function ShortlistPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [items, setItems] = useState<ShortlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/selections`);
+        if (!res.ok) throw new Error();
+        const selections = await res.json();
+        const mapped: ShortlistItem[] = [];
+        for (const sel of selections) {
+          for (const item of sel.items ?? []) {
+            const actorType =
+              item.entity_type === "MENTOR" ? "mentor" :
+              item.entity_type === "COMPANY" ? "company" :
+              item.entity_type === "PARTNER" ? "partner" : "service_provider";
+            mapped.push({
+              id: `sel-${sel.selection_id}-${item.id}`,
+              programmeId: id,
+              matchResultId: `match-${item.id}`,
+              actorId: String(item.entity_id),
+              actorType: actorType as ShortlistItem["actorType"],
+              actorName: item.entity_name ?? `${item.entity_type} #${item.entity_id}`,
+              matchScore: Math.round(item.match_score ?? 0),
+              addedAt: sel.created_at ?? new Date().toISOString(),
+              addedBy: sel.approved_by ?? "organizer",
+              isAdminSelected: sel.approval_status === "APPROVED",
+            });
+          }
+        }
+        setItems(mapped);
+      } catch {
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   return (
     <div className="flex flex-col">
@@ -23,7 +67,13 @@ export default async function ShortlistPage({ params }: { params: Promise<{ id: 
         </p>
       </div>
       <div className="p-8 max-w-2xl">
-        <ShortlistPanel items={[]} readOnly />
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+          </div>
+        ) : (
+          <ShortlistPanel items={items} readOnly />
+        )}
         <div className="mt-4">
           <Button asChild variant="navy">
             <Link href={`/organizer/programmes/${id}/ai-matching`}>

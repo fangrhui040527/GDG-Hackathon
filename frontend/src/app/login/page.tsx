@@ -63,12 +63,29 @@ export default function LoginPage() {
     setEmail(roleContent[role].email);
   }, [role]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/auth/demo-login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, role }),
+        }
+      );
+      if (!res.ok) throw new Error("Login failed");
+      const user = await res.json();
+      localStorage.setItem(
+        "nexusai_session",
+        JSON.stringify({ ...user, role: role, loggedInAt: new Date().toISOString() })
+      );
       router.push(role === "admin" ? "/admin/dashboard" : "/organizer/dashboard");
-    }, 600);
+    } catch {
+      setIsLoading(false);
+      alert("Login failed — is the backend running?");
+    }
   };
 
   return (
