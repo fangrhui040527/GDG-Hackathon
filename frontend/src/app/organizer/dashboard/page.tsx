@@ -32,6 +32,13 @@ export default function OrganizerDashboardPage() {
   const active = allProgrammes.filter((p) =>
     ["active", "published"].includes(p.status)
   );
+  const stats = {
+    total: allProgrammes.length,
+    draft: allProgrammes.filter((p) => p.status === "draft").length,
+    submitted: allProgrammes.filter((p) => ["submitted", "pending_review", "changes_requested"].includes(p.status)).length,
+    pendingReview: allProgrammes.filter((p) => p.status === "pending_review").length,
+    published: allProgrammes.filter((p) => ["published", "active"].includes(p.status)).length,
+  };
 
   return (
     <div className="flex flex-col">
@@ -123,8 +130,12 @@ export default function OrganizerDashboardPage() {
 
             <TabsContent value="all">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {allProgrammes.map((p) => (
-                  <ProgrammeCard key={p.id} programme={p} role="organizer" />
+                {allProgrammes.length === 0 ? (
+                  <p className="col-span-3 py-12 text-center text-slate-400">No programmes yet.</p>
+                ) : allProgrammes.map((p) => (
+                  <ProgrammeCard key={p.id} programme={p} role="organizer"
+                    onDelete={deleteProgramme}
+                    onSubmit={(id) => updateProgrammeStatus(id, "submitted")} />
                 ))}
               </div>
             </TabsContent>
@@ -132,7 +143,9 @@ export default function OrganizerDashboardPage() {
             <TabsContent value="drafts">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {drafts.length > 0 ? (
-                  drafts.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer" />)
+                  drafts.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer"
+                    onDelete={deleteProgramme}
+                    onSubmit={(id) => updateProgrammeStatus(id, "submitted")} />)
                 ) : (
                   <p className="col-span-3 py-12 text-center text-slate-400">No drafts found.</p>
                 )}
@@ -142,7 +155,8 @@ export default function OrganizerDashboardPage() {
             <TabsContent value="active">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {active.length > 0 ? (
-                  active.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer" />)
+                  active.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer"
+                    onDelete={deleteProgramme} />)
                 ) : (
                   <p className="col-span-3 py-12 text-center text-slate-400">
                     No active programmes.

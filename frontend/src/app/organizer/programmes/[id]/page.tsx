@@ -13,6 +13,8 @@ import {
   ArrowRight,
   ChevronLeft,
   Target,
+  Trash2,
+  Send,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,7 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
   }
 
   const req = programme.requirements;
+  const isDraft = programme.status === "draft";
 
   return (
     <div className="flex flex-col">
@@ -64,7 +67,17 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
               </span>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap">
+            {isDraft && (
+              <Button
+                variant="outline"
+                className="gap-1.5 text-violet-700 border-violet-200 hover:bg-violet-50"
+                onClick={() => { updateProgrammeStatus(id, "submitted"); router.push("/organizer/submitted"); }}
+              >
+                <Send className="h-4 w-4" />
+                Submit to Admin
+              </Button>
+            )}
             <Button asChild variant="outline">
               <Link href={`/organizer/programmes/${programme.id}/ai-matching`}>
                 View AI Matching
@@ -75,6 +88,15 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
                 View Shortlist
                 <ArrowRight className="h-4 w-4" />
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-red-500 border-red-100 hover:bg-red-50"
+              onClick={() => { deleteProgramme(id); router.push("/organizer/my-programmes"); }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
             </Button>
           </div>
         </div>

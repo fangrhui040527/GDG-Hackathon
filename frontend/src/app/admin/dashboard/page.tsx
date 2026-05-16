@@ -82,7 +82,8 @@ export default function AdminDashboardPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {pendingProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin"
+                  onDelete={deleteProgramme} />
               ))}
             </div>
           </section>
@@ -99,7 +100,8 @@ export default function AdminDashboardPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {publishedProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin"
+                  onDelete={deleteProgramme} />
               ))}
             </div>
           </section>

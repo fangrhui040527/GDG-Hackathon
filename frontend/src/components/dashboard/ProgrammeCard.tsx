@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, ArrowRight, PencilLine, MapPin } from "lucide-react";
+import { useState } from "react";
+import { CalendarDays, ArrowRight, PencilLine, MapPin, Trash2, Send } from "lucide-react";
 import type { Programme } from "@/types";
 import { formatDateRange, truncate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +13,8 @@ import StatusBadge from "@/components/dashboard/StatusBadge";
 interface ProgrammeCardProps {
   programme: Programme;
   role?: "organizer" | "admin";
+  onDelete?: (id: string) => void;
+  onSubmit?: (id: string) => void;
 }
 
 const CATEGORY_GRADIENTS: Record<string, string> = {
@@ -25,8 +30,10 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   Other: "from-slate-400 to-slate-600",
 };
 
-export default function ProgrammeCard({ programme, role = "organizer" }: ProgrammeCardProps) {
+export default function ProgrammeCard({ programme, role = "organizer", onDelete, onSubmit }: ProgrammeCardProps) {
+  const [confirming, setConfirming] = useState(false);
   const isDraft = programme.status === "draft";
+  const canSubmit = role === "organizer" && programme.status === "draft" && onSubmit;
   const detailHref =
     role === "admin"
       ? `/admin/submissions/${programme.id}`
@@ -102,29 +109,71 @@ export default function ProgrammeCard({ programme, role = "organizer" }: Program
       </div>
 
       {/* Footer CTA */}
-      <div className="border-t border-slate-100 dark:border-slate-700 px-5 py-3">
+      <div className="border-t border-slate-100 dark:border-slate-700 px-5 py-3 flex flex-col gap-2">
+        {/* Main action */}
         {isDraft ? (
-          <Button
-            asChild
-            variant="navy"
-            className="w-full gap-2"
-          >
+          <Button asChild variant="navy" className="w-full gap-2">
             <Link href={detailHref}>
               <PencilLine className="h-4 w-4" />
               Continue Editing
             </Link>
           </Button>
         ) : (
-          <Button
-            asChild
-            variant="navy"
-            className="w-full gap-2"
-          >
+          <Button asChild variant="navy" className="w-full gap-2">
             <Link href={detailHref}>
               View Details
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
+        )}
+
+        {/* Secondary actions row */}
+        {(canSubmit || onDelete) && (
+          <div className="flex gap-2">
+            {canSubmit && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-1.5 text-violet-700 border-violet-200 hover:bg-violet-50 dark:text-violet-300 dark:border-violet-800 dark:hover:bg-violet-950"
+                onClick={() => onSubmit!(programme.id)}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Submit to Admin
+              </Button>
+            )}
+            {onDelete && (
+              confirming ? (
+                <div className="flex flex-1 gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                    onClick={() => { onDelete(programme.id); setConfirming(false); }}
+                  >
+                    Confirm Delete
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setConfirming(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`gap-1.5 text-red-500 border-red-100 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950 ${canSubmit ? "" : "flex-1"}`}
+                  onClick={() => setConfirming(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {!canSubmit && "Delete"}
+                </Button>
+              )
+            )}
+          </div>
         )}
       </div>
     </div>
