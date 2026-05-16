@@ -34,11 +34,10 @@ class FakeAIService(AIService):
         return {
             "full_name": "Asha Tan",
             "email": "asha@example.com",
-            "industries": ["fintech", "payments"],
-            "support_types": ["fundraising", "gtm"],
-            "stages": ["seed", "series_a"],
-            "languages": ["en", "ms"],
-            "bio": extracted_text[:500],
+            "preferred_industry": "fintech, payments",
+            "type_of_support_offered": "fundraising, gtm",
+            "preferred_company_stage": "seed, series_a",
+            "short_bio": extracted_text[:500],
         }
 
 
@@ -93,7 +92,8 @@ class VertexAIService(AIService):
         model = GenerativeModel(self.gemini_model)
         prompt = (
             "Extract a mentor profile from this CV text. Return compact JSON with keys: "
-            "full_name, email, industries, support_types, stages, languages, bio.\n\n"
+            "full_name, email, job_title, organization_name, preferred_industry, "
+            "type_of_support_offered, preferred_company_stage, short_bio.\n\n"
             f"{extracted_text}"
         )
         response = model.generate_content(

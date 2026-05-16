@@ -1,14 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   apiGet,
   apiPost,
+  AgentChatResponse,
   Company,
   DashboardMetrics,
   EventRecord,
   MatchRecommendation,
   Mentor,
+  Notification,
+  Selection,
+  streamAgentChat,
   uploadMentorCv
 } from "@/lib/api";
 
@@ -16,9 +20,8 @@ const emptyMetrics: DashboardMetrics = {
   mentors: 0,
   companies: 0,
   events: 0,
-  approved_selections: 0,
-  followups: 0,
-  average_outcome_score: 0
+  selections: 0,
+  follow_ups: 0,
 };
 
 function toList(value: string): string[] {
@@ -34,23 +37,35 @@ export function AdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [recommendations, setRecommendations] = useState<MatchRecommendation[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selections, setSelections] = useState<Selection[]>([]);
   const [status, setStatus] = useState("Ready");
   const [selectedMentorId, setSelectedMentorId] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectionId, setSelectionId] = useState("");
 
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatStreaming, setChatStreaming] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
   async function refresh() {
-    const [nextMetrics, nextMentors, nextCompanies, nextEvents] = await Promise.all([
+    const [nextMetrics, nextMentors, nextCompanies, nextEvents, nextNotifications, nextSelections] = await Promise.all([
       apiGet<DashboardMetrics>("/analytics/dashboard"),
       apiGet<Mentor[]>("/profiles/mentors"),
       apiGet<Company[]>("/profiles/companies"),
-      apiGet<EventRecord[]>("/events")
+      apiGet<EventRecord[]>("/events"),
+      apiGet<Notification[]>("/notifications").catch(() => []),
+      apiGet<Selection[]>("/selections").catch(() => []),
     ]);
     setMetrics(nextMetrics);
     setMentors(nextMentors);
     setCompanies(nextCompanies);
     setEvents(nextEvents);
+    setNotifications(nextNotifications);
+    setSelections(nextSelections);
     setSelectedMentorId((current) => current || nextMentors[0]?.id || "");
     setSelectedCompanyId((current) => current || nextCompanies[0]?.id || "");
     setSelectedEventId((current) => current || nextEvents[0]?.id || "");
@@ -176,6 +191,27 @@ export function AdminDashboard() {
     await refresh();
   }
 
+  async function sendChat() {
+    if (!chatInput.trim() || chatStreaming) return;
+    const userMsg = chatInput.trim();
+    setChatInput("");
+    setChatMessages((prev) => [...prev, { role: "user", content: userMsg }]);
+    setChatStreaming(true);
+
+    try {
+      const response = await apiPost<AgentChatResponse>("/agent/chat", {
+        message: userMsg,
+        session_id: "admin-session",
+      });
+      setChatMessages((prev) => [...prev, { role: "assistant", content: response.reply }]);
+    } catch (err) {
+      setChatMessages((prev) => [...prev, { role: "assistant", content: `Error: ${err}` }]);
+    } finally {
+      setChatStreaming(false);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    }
+  }
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -188,6 +224,9 @@ export function AdminDashboard() {
           <a href="#profiles">Profiles</a>
           <a href="#document-ai">Document AI</a>
           <a href="#matching">Matching</a>
+          <a href="#copilot">Copilot</a>
+          <a href="#selections">Selections</a>
+          <a href="#notifications">Notifications</a>
           <a href="#settings">Settings</a>
         </nav>
         <p className="status">{status}</p>
@@ -203,9 +242,9 @@ export function AdminDashboard() {
             <Metric label="Mentors" value={metrics.mentors} />
             <Metric label="Companies" value={metrics.companies} />
             <Metric label="Events" value={metrics.events} />
-            <Metric label="Approved" value={metrics.approved_selections} />
-            <Metric label="Follow-ups" value={metrics.followups} />
-            <Metric label="Avg outcome" value={metrics.average_outcome_score.toFixed(2)} />
+            <Metric label="Selections" value={metrics.selections} />
+            <Metric label="Follow-ups" value={metrics.follow_ups} />
+            <Metric label="Notifications" value={notifications.filter(n => !n.read_at).length} />
           </div>
         </section>
 
@@ -340,6 +379,73 @@ export function AdminDashboard() {
             <li>Allowed MCP tools: BigQuery, Spanner Graph, Document AI, Chirp STT.</li>
             <li>Firestore, Gmail, Drive, and Calendar MCP tools are disabled.</li>
           </ul>
+        </section>
+
+        <section id="copilot" className="band">
+          <div className="section-heading">
+            <p className="eyebrow">NexusAI Copilot</p>
+            <h2>Agent chat</h2>
+          </div>
+          <div className="chat-container">
+            <div className="chat-messages">
+              {chatMessages.length === 0 && (
+                <p className="chat-hint">Ask the copilot anything: &quot;Match my fintech cohort to mentors&quot;, &quot;Show dashboard metrics&quot;, etc.</p>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`chat-msg ${msg.role}`}>
+                  <strong>{msg.role === "user" ? "You" : "NexusAI"}:</strong>
+                  <div dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, "<br/>") }} />
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="chat-input-row">
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendChat()}
+                placeholder="Type a message..."
+                disabled={chatStreaming}
+              />
+              <button onClick={sendChat} disabled={chatStreaming}>
+                {chatStreaming ? "..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="selections" className="band">
+          <div className="section-heading">
+            <p className="eyebrow">Approval workflow</p>
+            <h2>Selections ({selections.length})</h2>
+          </div>
+          <div className="record-list">
+            {selections.map((sel) => (
+              <article key={sel.selection_id} className="match-card">
+                <div>
+                  <h3>Selection #{sel.selection_id}: {sel.purpose || "Untitled"}</h3>
+                  <p>Status: <strong>{sel.approval_status}</strong> | Items: {sel.items.length} | Version: {sel.version}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="notifications" className="band">
+          <div className="section-heading">
+            <p className="eyebrow">Communications</p>
+            <h2>Notifications ({notifications.filter(n => !n.read_at).length} unread)</h2>
+          </div>
+          <div className="record-list">
+            {notifications.map((notif) => (
+              <article key={notif.notification_id} className={`match-card ${notif.read_at ? "read" : ""}`}>
+                <div>
+                  <h3>{notif.title}</h3>
+                  <p>{notif.body} — <em>{notif.kind}</em> for {notif.user_email}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
       </section>
     </main>

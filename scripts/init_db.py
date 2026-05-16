@@ -1,10 +1,10 @@
 from nexusai.config import get_settings
-from nexusai.database import Base, create_postgres_engine
+from nexusai.database import Base, create_database_engine
 
 
 def main() -> None:
     settings = get_settings()
-    engine = create_postgres_engine(settings.database_url)
+    engine = create_database_engine(settings)
     Base.metadata.create_all(engine)
     print("NexusAI PostgreSQL tables are ready.")
 

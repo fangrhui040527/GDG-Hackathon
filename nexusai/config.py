@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     )
 
     database_url: str = Field(alias="DATABASE_URL")
+    cloud_sql_connection_name: str | None = Field(default=None, alias="CLOUD_SQL_CONNECTION_NAME")
+    database_name: str | None = Field(default=None, alias="DATABASE_NAME")
+    database_user: str | None = Field(default=None, alias="DATABASE_USER")
+    database_password: str | None = Field(default=None, alias="DATABASE_PASSWORD")
+    database_host: str | None = Field(default=None, alias="DATABASE_HOST")
+    database_port: int = Field(default=5432, alias="DATABASE_PORT")
     google_cloud_project: str = Field(alias="GOOGLE_CLOUD_PROJECT")
     google_cloud_location: str = Field(default="asia-southeast1", alias="GOOGLE_CLOUD_LOCATION")
     google_application_credentials: str | None = Field(default=None, alias="GOOGLE_APPLICATION_CREDENTIALS")
@@ -21,9 +27,9 @@ class Settings(BaseSettings):
     vertex_gemini_model: str = Field(default="gemini-2.5-flash", alias="VERTEX_GEMINI_MODEL")
     vertex_reasoning_model: str = Field(default="gemini-2.5-pro", alias="VERTEX_REASONING_MODEL")
     vertex_embedding_model: str = Field(default="text-embedding-005", alias="VERTEX_EMBEDDING_MODEL")
-    vertex_vector_index_endpoint_id: str = Field(alias="VERTEX_VECTOR_INDEX_ENDPOINT_ID")
+    vertex_vector_index_endpoint_id: str | None = Field(default=None, alias="VERTEX_VECTOR_INDEX_ENDPOINT_ID")
 
-    document_ai_processor_id: str = Field(alias="DOCUMENT_AI_PROCESSOR_ID")
+    document_ai_processor_id: str | None = Field(default=None, alias="DOCUMENT_AI_PROCESSOR_ID")
 
     enable_bigquery_mcp: bool = Field(default=True, alias="ENABLE_BIGQUERY_MCP")
     enable_spanner_graph_mcp: bool = Field(default=True, alias="ENABLE_SPANNER_GRAPH_MCP")
@@ -37,6 +43,37 @@ class Settings(BaseSettings):
 
     enable_cloud_translation: bool = Field(default=True, alias="ENABLE_CLOUD_TRANSLATION")
     cloud_translation_target_language: str = Field(default="en", alias="CLOUD_TRANSLATION_TARGET_LANGUAGE")
+
+    # Auth
+    google_oauth_client_id: str | None = Field(default=None, alias="GOOGLE_OAUTH_CLIENT_ID")
+    google_oauth_client_secret: str | None = Field(default=None, alias="GOOGLE_OAUTH_CLIENT_SECRET")
+    session_jwt_secret: str = Field(default="dev-secret-change-me", alias="SESSION_JWT_SECRET")
+    session_jwt_ttl_hours: int = Field(default=168, alias="SESSION_JWT_TTL_HOURS")
+    setup_token: str | None = Field(default=None, alias="SETUP_TOKEN")
+
+    # Vector Search
+    vertex_vector_endpoint_id: str | None = Field(default=None, alias="VERTEX_VECTOR_ENDPOINT_ID")
+    vertex_vector_deployed_index_id: str | None = Field(default=None, alias="VERTEX_VECTOR_DEPLOYED_INDEX_ID")
+
+    # Spanner Graph
+    spanner_instance_id: str | None = Field(default=None, alias="SPANNER_INSTANCE_ID")
+    spanner_database_id: str | None = Field(default=None, alias="SPANNER_DATABASE_ID")
+    spanner_graph_name: str = Field(default="EcosystemGraph", alias="SPANNER_GRAPH_NAME")
+
+    # BigQuery
+    bigquery_dataset: str = Field(default="nexusai_dw", alias="BIGQUERY_DATASET")
+    bigquery_reranker_model: str = Field(default="nexusai_dw.match_reranker", alias="BIGQUERY_RERANKER_MODEL")
+    bigquery_location: str = Field(default="us-central1", alias="BIGQUERY_LOCATION")
+
+    # Email
+    email_provider: str = Field(default="smtp", alias="EMAIL_PROVIDER")
+    smtp_host: str = Field(default="smtp.gmail.com", alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="SMTP_PORT")
+    smtp_user: str | None = Field(default=None, alias="SMTP_USER")
+    smtp_password: str | None = Field(default=None, alias="SMTP_PASSWORD")
+    smtp_from_name: str = Field(default="NexusAI", alias="SMTP_FROM_NAME")
+    smtp_from_email: str | None = Field(default=None, alias="SMTP_FROM_EMAIL")
+    email_outbox_dry_run: bool = Field(default=True, alias="EMAIL_OUTBOX_DRY_RUN")
 
     next_public_api_url: str = Field(default="http://localhost:8000", alias="NEXT_PUBLIC_API_URL")
 

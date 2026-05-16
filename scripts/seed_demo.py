@@ -1,36 +1,38 @@
 from nexusai.config import get_settings
-from nexusai.database import Base, Company, Event, Mentor, create_postgres_engine, create_session_factory
+from nexusai.database import Company, Event, Mentor, create_database_engine, create_session_factory
 
 
 def main() -> None:
     settings = get_settings()
-    engine = create_postgres_engine(settings.database_url)
-    Base.metadata.create_all(engine)
+    engine = create_database_engine(settings)
     session_factory = create_session_factory(engine)
     session = session_factory()
     try:
+        existing = session.query(Mentor).filter(Mentor.email == "asha@example.com").first()
+        if existing:
+            print("Demo seed already exists.")
+            return
         mentor = Mentor(
             full_name="Asha Tan",
             email="asha@example.com",
-            industries=["fintech", "payments"],
-            support_types=["fundraising", "gtm"],
-            stages=["seed", "series_a"],
-            languages=["en", "ms"],
-            capacity_score=0.9,
-            bio="Former payments operator and seed-stage mentor.",
+            preferred_industry="fintech, payments",
+            type_of_support_offered="fundraising, gtm",
+            preferred_company_stage="seed, series_a",
+            available_hours_per_month=10,
+            max_companies_to_mentor=3,
+            short_bio="Former payments operator and seed-stage mentor.",
         )
         company = Company(
             company_name="PayBridge",
             industry="fintech",
-            stage="seed",
-            support_needed=["fundraising", "market_access"],
-            languages=["en"],
-            description="Cross-border payment workflow startup.",
+            business_stage="seed",
+            support_needed="fundraising, market_access",
+            company_description="Cross-border payment workflow startup.",
         )
         event = Event(
             event_name="Q3 Fintech Matching",
-            event_type="matchmaking",
-            programme_name="KL Fintech",
+            event_description="Quarterly fintech matchmaking event",
+            event_location="KL Fintech Hub",
         )
         session.add_all([mentor, company, event])
         session.commit()
