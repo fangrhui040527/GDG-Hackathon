@@ -170,6 +170,29 @@ class MatchGroup(BaseModel):
     service_providers: list[MatchRecommendation] = []
 
 
+# ── Shortlist models ──────────────────────────────────────────────────────────
+
+class ShortlistItemCreate(BaseModel):
+    match_result_id: str
+    actor_id: str
+    actor_type: str
+    actor_name: str
+    match_score: int
+
+
+class ShortlistItemDTO(BaseModel):
+    id: str
+    programme_id: str
+    match_result_id: str
+    actor_id: str
+    actor_type: str
+    actor_name: str
+    match_score: int
+    added_at: str
+    added_by: str
+    is_admin_selected: bool
+
+
 # ── Dashboard model ───────────────────────────────────────────────────────────
 
 class DashboardMetrics(BaseModel):
