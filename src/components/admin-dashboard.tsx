@@ -359,7 +359,7 @@ export function AdminDashboard() {
                 </div>
                 <strong>{Math.round(item.score * 100)}%</strong>
                 <div className="chips">
-                  {item.fit_factors.map((factor) => (
+                  {item.fit_factors.map((factor: string) => (
                     <span key={factor}>{factor}</span>
                   ))}
                 </div>
