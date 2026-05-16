@@ -6,6 +6,11 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
+    "/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/login/page.js"
+    ],
     "/organizer/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -15,26 +20,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/organizer/dashboard/page.js"
-    ],
-    "/organizer/create-programme/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/organizer/create-programme/page.js"
-    ],
-    "/organizer/my-programmes/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/organizer/my-programmes/page.js"
-    ],
-    "/organizer/submitted/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/organizer/submitted/page.js"
-    ],
-    "/organizer/form-hub/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/organizer/form-hub/page.js"
     ]
   }
 }

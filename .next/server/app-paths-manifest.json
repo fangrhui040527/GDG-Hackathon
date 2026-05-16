@@ -1,5 +1,4 @@
 {
-  "/organizer/dashboard/page": "app/organizer/dashboard/page.js",
-  "/organizer/form-hub/page": "app/organizer/form-hub/page.js",
-  "/organizer/create-programme/page": "app/organizer/create-programme/page.js"
+  "/login/page": "app/login/page.js",
+  "/organizer/dashboard/page": "app/organizer/dashboard/page.js"
 }
