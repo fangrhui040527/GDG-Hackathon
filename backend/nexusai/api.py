@@ -79,6 +79,7 @@ class PartnerIn(BaseModel):
     organisation_name: str
     organisation_type: str = "Personal"
     country: str = ""
+    website: str = ""
     contact_person_name: str = ""
     contact_email: str = ""
     organisation_description: str = ""
@@ -92,11 +93,17 @@ class PartnerIn(BaseModel):
 
 class ServiceProviderIn(BaseModel):
     organisation_name: str
+    service_provider_type: str = "Not Specified"
+    country_region: str = "Not Specified"
+    website_url: str = ""
     contact_person_name: str = ""
     contact_email: str = ""
     company_description: str = ""
     services_offered: str = ""
     detailed_service_description: str = ""
+    target_company_stage: str = "Not Specified"
+    pricing_model: str = "Not Specified"
+    current_capacity: str = "Not Specified"
 
 
 class EventIn(BaseModel):
@@ -156,8 +163,10 @@ class DashboardMetrics(BaseModel):
     mentors: int
     companies: int
     events: int
-    follow_ups: int
+    followups: int
     selections: int = 0
+    approved_selections: int = 0
+    average_outcome_score: float = 0.0
 
 
 class SelectionItemIn(BaseModel):
@@ -288,7 +297,7 @@ def create_app(
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:8000"],
+        allow_origins=["http://localhost:3000", "http://localhost:8000", "http://127.0.0.1:3000", "http://127.0.0.1:8000"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -535,6 +544,15 @@ def create_app(
         db.flush()
         return prog
 
+    @app.delete("/programmes/{programme_id}", status_code=204)
+    def delete_programme(programme_id: int, db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        db.delete(prog)
+        db.flush()
+        log_audit(db, action="DELETE", entity_type="programme", entity_id=programme_id)
+
     @app.post("/programmes/{programme_id}/submit", response_model=ProgrammeOut)
     def submit_programme(programme_id: int, db: Db):
         prog = db.get(Programme, programme_id)
@@ -587,6 +605,162 @@ def create_app(
         prog.status = "changes_requested"
         db.flush()
         return prog
+
+    @app.get("/programmes/{programme_id}/match")
+    def match_programme(programme_id: int, db: Db):
+        """Score all actors against a programme's target criteria."""
+        import traceback as _tb
+        try:
+            return _match_programme_impl(programme_id, db)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=_tb.format_exc()) from exc
+
+    def _match_programme_impl(programme_id: int, db: Session):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+
+        def _norm(s: str | None) -> str:
+            return (s or "").strip().lower()
+
+        def _tier(score: float) -> str:
+            if score >= 0.75:
+                return "Excellent"
+            if score >= 0.50:
+                return "Strong"
+            if score >= 0.25:
+                return "Good"
+            return "Fair"
+
+        def _industry_match(actor_field: str | None, target: str | None) -> bool:
+            if not target or not actor_field:
+                return False
+            return _norm(target) in _norm(actor_field)
+
+        def _stage_match(actor_stage: str | None, target: str | None) -> bool:
+            if not target or not actor_stage:
+                return False
+            return _norm(target) in _norm(actor_stage)
+
+        def _country_match(actor_country: str | None, target: str | None) -> bool:
+            if not target or not actor_country:
+                return False
+            return _norm(target) in _norm(actor_country)
+
+        ti = prog.target_industry
+        ts = prog.target_company_stage
+        tc = prog.target_country
+
+        mentors_out = []
+        for m in db.scalars(select(Mentor)).all():
+            score = 0.0
+            factors: list[str] = []
+            if _industry_match(m.preferred_industry, ti):
+                score += 0.40
+                factors.append(f"Industry: {ti}")
+            if _stage_match(m.preferred_company_stage, ts):
+                score += 0.40
+                factors.append(f"Stage: {ts}")
+            if _country_match(m.country, tc):
+                score += 0.20
+                factors.append(f"Country: {tc}")
+            mentors_out.append({
+                "id": f"mentor-{m.mentor_id}",
+                "actorId": str(m.mentor_id),
+                "actorType": "mentor",
+                "actorName": m.full_name,
+                "profileSummary": m.short_bio or m.job_title or "",
+                "matchScore": round(score * 100),
+                "matchTier": _tier(score),
+                "aiExplanation": ", ".join(factors) if factors else "General ecosystem fit",
+                "availabilityLabel": m.current_availability_status or "Available",
+                "isAvailable": (m.current_availability_status or "Available") == "Available",
+                "tags": [t for t in [m.preferred_industry, m.preferred_company_stage, m.country] if t],
+            })
+
+        companies_out = []
+        for c in db.scalars(select(Company)).all():
+            score = 0.0
+            factors: list[str] = []
+            if _industry_match(c.industry, ti):
+                score += 0.40
+                factors.append(f"Industry: {ti}")
+            if _stage_match(c.business_stage, ts):
+                score += 0.40
+                factors.append(f"Stage: {ts}")
+            if _country_match(c.country, tc):
+                score += 0.20
+                factors.append(f"Country: {tc}")
+            companies_out.append({
+                "id": f"company-{c.company_id}",
+                "actorId": str(c.company_id),
+                "actorType": "company",
+                "actorName": c.company_name,
+                "profileSummary": c.company_description or "",
+                "matchScore": round(score * 100),
+                "matchTier": _tier(score),
+                "aiExplanation": ", ".join(factors) if factors else "General ecosystem fit",
+                "availabilityLabel": c.availability or "Available",
+                "isAvailable": True,
+                "tags": [t for t in [c.industry, c.business_stage, c.country] if t],
+            })
+
+        partners_out = []
+        for p in db.scalars(select(Partner)).all():
+            score = 0.0
+            factors: list[str] = []
+            if _industry_match(p.industries_of_interest, ti):
+                score += 0.60
+                factors.append(f"Industry: {ti}")
+            if _country_match(p.country, tc):
+                score += 0.40
+                factors.append(f"Country: {tc}")
+            partners_out.append({
+                "id": f"partner-{p.partner_id}",
+                "actorId": str(p.partner_id),
+                "actorType": "partner",
+                "actorName": p.organisation_name,
+                "profileSummary": p.organisation_description or "",
+                "matchScore": round(score * 100),
+                "matchTier": _tier(score),
+                "aiExplanation": ", ".join(factors) if factors else "General ecosystem fit",
+                "availabilityLabel": "Available",
+                "isAvailable": True,
+                "tags": [t for t in [p.industries_of_interest, p.country, p.organisation_type] if t],
+            })
+
+        sps_out = []
+        for s in db.scalars(select(ServiceProvider)).all():
+            score = 0.50
+            factors: list[str] = ["Service provider fit"]
+            if _industry_match(s.services_offered, ti):
+                score = min(1.0, score + 0.30)
+                factors.append(f"Services match: {ti}")
+            sps_out.append({
+                "id": f"sp-{s.sp_id}",
+                "actorId": str(s.sp_id),
+                "actorType": "service_provider",
+                "actorName": s.organisation_name,
+                "profileSummary": s.company_description or "",
+                "matchScore": round(score * 100),
+                "matchTier": _tier(score),
+                "aiExplanation": ", ".join(factors),
+                "availabilityLabel": "Available",
+                "isAvailable": True,
+                "tags": [t for t in [s.services_offered] if t],
+            })
+
+        mentors_out.sort(key=lambda x: -x["matchScore"])
+        companies_out.sort(key=lambda x: -x["matchScore"])
+        partners_out.sort(key=lambda x: -x["matchScore"])
+        sps_out.sort(key=lambda x: -x["matchScore"])
+
+        return {
+            "mentors": mentors_out,
+            "companies": companies_out,
+            "partners": partners_out,
+            "serviceProviders": sps_out,
+        }
 
     # ── Actors aggregate endpoint ─────────────────────────────
 
@@ -669,12 +843,17 @@ def create_app(
 
     @app.get("/analytics/dashboard", response_model=DashboardMetrics)
     def analytics_dashboard(db: Db):
+        approved = db.scalar(
+            select(func.count()).select_from(Selection).where(Selection.approval_status == "APPROVED")
+        ) or 0
         return DashboardMetrics(
             mentors=count_rows(db, Mentor),
             companies=count_rows(db, Company),
             events=count_rows(db, Event),
-            follow_ups=count_rows(db, FollowUp),
+            followups=count_rows(db, FollowUp),
             selections=count_rows(db, Selection),
+            approved_selections=approved,
+            average_outcome_score=0.0,
         )
 
     @app.post("/mentors/{mentor_id}/cv")

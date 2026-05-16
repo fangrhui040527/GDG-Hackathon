@@ -6,7 +6,7 @@ import { FileText, Globe, Activity, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { fetchProgrammes, fetchActors } from "@/lib/api";
+import { fetchProgrammes, fetchActors, deleteProgramme as apiDeleteProgramme } from "@/lib/api";
 import type { Programme } from "@/types";
 import type { ActorTableRow } from "@/types/actor";
 
@@ -15,9 +15,18 @@ export default function AdminDashboardPage() {
   const [actors, setActors] = useState<ActorTableRow[]>([]);
 
   useEffect(() => {
-    fetchProgrammes().then(setProgrammes).catch(() => {});
-    fetchActors().then(setActors).catch(() => {});
+    fetchProgrammes().then(setProgrammes).catch((e) => console.error("Failed to load programmes:", e));
+    fetchActors().then(setActors).catch((e) => console.error("Failed to load actors:", e));
   }, []);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await apiDeleteProgramme(id);
+      setProgrammes((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      console.error("Delete failed:", e);
+    }
+  };
 
   const pendingProgrammes = programmes.filter((p) =>
     ["submitted", "pending_review", "changes_requested"].includes(p.status)
@@ -82,7 +91,8 @@ export default function AdminDashboardPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {pendingProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin"
+                  onDelete={handleDelete} />
               ))}
             </div>
           </section>
@@ -99,7 +109,8 @@ export default function AdminDashboardPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {publishedProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin"
+                  onDelete={handleDelete} />
               ))}
             </div>
           </section>

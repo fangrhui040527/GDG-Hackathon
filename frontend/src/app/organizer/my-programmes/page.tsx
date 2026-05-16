@@ -11,10 +11,16 @@ import type { Programme } from "@/types";
 
 export default function MyProgrammesPage() {
   const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    fetchProgrammes().then(setProgrammes).catch(() => {});
+    fetchProgrammes().then(setProgrammes).catch((e) => console.error("Failed to load programmes:", e));
   }, []);
+
+  const filtered = programmes.filter((p) =>
+    p.name.toLowerCase().includes(query.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col">
       <div className="border-b border-slate-200 bg-white px-8 py-5">
@@ -47,7 +53,7 @@ export default function MyProgrammesPage() {
 
       <div className="p-8">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {programmes.map((p) => (
+          {filtered.map((p) => (
             <ProgrammeCard key={p.id} programme={p} role="organizer" />
           ))}
         </div>

@@ -15,15 +15,33 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
-import { fetchProgrammes } from "@/lib/api";
+import { fetchProgrammes, deleteProgramme as apiDeleteProgramme, updateProgrammeStatus as apiUpdateStatus } from "@/lib/api";
 import type { Programme } from "@/types";
 
 export default function OrganizerDashboardPage() {
   const [allProgrammes, setAllProgrammes] = useState<Programme[]>([]);
 
   useEffect(() => {
-    fetchProgrammes().then(setAllProgrammes).catch(() => {});
+    fetchProgrammes().then(setAllProgrammes).catch((e) => console.error("Failed to load programmes:", e));
   }, []);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await apiDeleteProgramme(id);
+      setAllProgrammes((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      console.error("Delete failed:", e);
+    }
+  };
+
+  const handleSubmit = async (id: string) => {
+    try {
+      const updated = await apiUpdateStatus(id, "submitted");
+      setAllProgrammes((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (e) {
+      console.error("Submit failed:", e);
+    }
+  };
 
   const drafts = allProgrammes.filter((p) => p.status === "draft");
   const submitted = allProgrammes.filter((p) => p.status === "submitted");
@@ -134,8 +152,8 @@ export default function OrganizerDashboardPage() {
                   <p className="col-span-3 py-12 text-center text-slate-400">No programmes yet.</p>
                 ) : allProgrammes.map((p) => (
                   <ProgrammeCard key={p.id} programme={p} role="organizer"
-                    onDelete={deleteProgramme}
-                    onSubmit={(id) => updateProgrammeStatus(id, "submitted")} />
+                    onDelete={handleDelete}
+                    onSubmit={handleSubmit} />
                 ))}
               </div>
             </TabsContent>
@@ -144,8 +162,8 @@ export default function OrganizerDashboardPage() {
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {drafts.length > 0 ? (
                   drafts.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer"
-                    onDelete={deleteProgramme}
-                    onSubmit={(id) => updateProgrammeStatus(id, "submitted")} />)
+                    onDelete={handleDelete}
+                    onSubmit={handleSubmit} />)
                 ) : (
                   <p className="col-span-3 py-12 text-center text-slate-400">No drafts found.</p>
                 )}
@@ -156,7 +174,7 @@ export default function OrganizerDashboardPage() {
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {active.length > 0 ? (
                   active.map((p) => <ProgrammeCard key={p.id} programme={p} role="organizer"
-                    onDelete={deleteProgramme} />)
+                    onDelete={handleDelete} />)
                 ) : (
                   <p className="col-span-3 py-12 text-center text-slate-400">
                     No active programmes.

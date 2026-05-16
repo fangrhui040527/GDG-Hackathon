@@ -223,12 +223,12 @@ class ServiceProvider(Base, TimestampMixin):
     sp_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organisation_name: Mapped[str] = mapped_column(String(255), nullable=False)
     service_provider_type: Mapped[ServiceProviderTypeEnum] = mapped_column(
-        Enum(ServiceProviderTypeEnum, name="service_provider_type_enum", create_type=False),
+        Enum(ServiceProviderTypeEnum, name="service_provider_type_enum", create_type=False, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=ServiceProviderTypeEnum.NotSpecified,
     )
     country_region: Mapped[CountryRegionEnum] = mapped_column(
-        Enum(CountryRegionEnum, name="country_region_enum", create_type=False),
+        Enum(CountryRegionEnum, name="country_region_enum", create_type=False, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=CountryRegionEnum.NotSpecified,
     )
@@ -239,17 +239,17 @@ class ServiceProvider(Base, TimestampMixin):
     services_offered: Mapped[str] = mapped_column(Text, nullable=False)
     detailed_service_description: Mapped[str] = mapped_column(Text, nullable=False)
     target_company_stage: Mapped[TargetCompanyStageEnum] = mapped_column(
-        Enum(TargetCompanyStageEnum, name="target_company_stage_enum", create_type=False),
+        Enum(TargetCompanyStageEnum, name="target_company_stage_enum", create_type=False, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=TargetCompanyStageEnum.NotSpecified,
     )
     pricing_model: Mapped[PricingModelEnum] = mapped_column(
-        Enum(PricingModelEnum, name="pricing_model_enum", create_type=False),
+        Enum(PricingModelEnum, name="pricing_model_enum", create_type=False, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=PricingModelEnum.NotSpecified,
     )
     current_capacity: Mapped[CurrentCapacityEnum] = mapped_column(
-        Enum(CurrentCapacityEnum, name="current_capacity_enum", create_type=False),
+        Enum(CurrentCapacityEnum, name="current_capacity_enum", create_type=False, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=CurrentCapacityEnum.NotSpecified,
     )

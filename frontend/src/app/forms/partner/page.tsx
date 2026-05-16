@@ -10,12 +10,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useFormStore } from "@/lib/form-store";
+import { registerPartner } from "@/lib/api";
 import { COUNTRIES } from "@/lib/constants";
 
-const ORG_TYPES = [
-  "Corporate", "NGO / Non-profit", "Government Agency",
-  "Academic Institution", "Investment Firm", "Industry Association", "Other",
-];
+const ORG_TYPES = ["Personal", "Business", "Listed", "International"];
 
 const COLLABORATION_TYPES = [
   "Programme Co-creation", "Market Access & Distribution", "Funding / Investment",
@@ -70,15 +68,20 @@ export default function PartnerRegistrationForm() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
-    addSubmission("partner", {
-      ...form,
-      industries_of_interest: selectedIndustries.join(", "),
-    });
-    setSubmitted(true);
+    try {
+      await registerPartner({
+        ...form,
+        industries_of_interest: selectedIndustries.join(", "),
+      });
+      addSubmission("partner", { ...form, industries_of_interest: selectedIndustries.join(", ") });
+      setSubmitted(true);
+    } catch {
+      setErrors({ organisation_name: "Failed to register. Please try again." });
+    }
   };
 
   if (submitted) {

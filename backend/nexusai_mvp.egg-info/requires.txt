@@ -8,6 +8,7 @@ pydantic>=2
 pydantic-settings>=2.6
 python-multipart>=0.0.12
 python-dotenv>=1.0
+python-certifi-win32>=1.6
 google-auth>=2.36
 google-cloud-aiplatform>=1.75
 google-cloud-bigquery>=3.27
@@ -16,9 +17,13 @@ google-cloud-translate>=3.18
 google-cloud-documentai>=3.0
 google-cloud-speech>=2.29
 langgraph>=0.2.60
+langgraph-checkpoint-postgres>=2.0
 langchain-google-vertexai>=2.0
 mcp>=1.2
 httpx>=0.28
+sse-starlette>=2.1
+pyjwt[crypto]>=2.9
+slowapi>=0.1.9
 
 [dev]
 pytest>=8.3
