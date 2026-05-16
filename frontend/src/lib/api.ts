@@ -40,8 +40,9 @@ export type DashboardMetrics = {
   mentors: number;
   companies: number;
   events: number;
-  approved_selections: number;
   followups: number;
+  selections: number;
+  approved_selections: number;
   average_outcome_score: number;
 };
 
@@ -215,11 +216,50 @@ export async function requestChangesProgramme(id: string): Promise<ProgrammeDTO>
   return apiPost<ProgrammeDTO>(`/programmes/${id}/request-changes`, {});
 }
 
+export async function deleteProgramme(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/programmes/${id}`, { method: "DELETE" });
+  if (!response.ok) throw new Error(await response.text());
+}
+
+export async function updateProgrammeStatus(id: string, status: string): Promise<Programme> {
+  const actions: Record<string, (id: string) => Promise<ProgrammeDTO>> = {
+    submitted: submitProgramme,
+    approved: approveProgramme,
+    published: publishProgramme,
+    rejected: rejectProgramme,
+    changes_requested: requestChangesProgramme,
+  };
+  const action = actions[status];
+  if (!action) throw new Error(`Unknown status: ${status}`);
+  const dto = await action(id);
+  return toProgramme(dto);
+}
+
 /* ── Actors API ──────────────────────────────────────────────── */
 
 export async function fetchActors(): Promise<ActorTableRow[]> {
   const dtos = await apiGet<ActorDTO[]>("/actors");
   return dtos.map(toActorRow);
+}
+
+export async function registerMentor(data: Record<string, unknown>): Promise<unknown> {
+  return apiPost("/profiles/mentors", data);
+}
+
+export async function registerCompany(data: Record<string, unknown>): Promise<unknown> {
+  return apiPost("/profiles/companies", data);
+}
+
+export async function registerPartner(data: Record<string, unknown>): Promise<unknown> {
+  return apiPost("/profiles/partners", data);
+}
+
+export async function registerServiceProvider(data: Record<string, unknown>): Promise<unknown> {
+  return apiPost("/profiles/service-providers", data);
+}
+
+export async function fetchProgrammeMatches(programmeId: string): Promise<import("@/types").MatchResultsGroup> {
+  return apiGet(`/programmes/${programmeId}/match`);
 }
 
 /* ── Dashboard API ───────────────────────────────────────────── */

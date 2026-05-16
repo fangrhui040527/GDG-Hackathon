@@ -4,11 +4,9 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   useCallback,
   type ReactNode,
 } from "react";
-import { MOCK_PROGRAMMES } from "@/lib/mock-data";
 import type { Programme, ProgrammeStatus } from "@/types";
 
 interface ProgrammeStore {
@@ -21,29 +19,7 @@ interface ProgrammeStore {
 const ProgrammeStoreContext = createContext<ProgrammeStore | null>(null);
 
 export function ProgrammeStoreProvider({ children }: { children: ReactNode }) {
-  const [programmes, setProgrammes] = useState<Programme[]>(MOCK_PROGRAMMES);
-  const [hydrated, setHydrated] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("nexusai_programmes");
-      if (stored) setProgrammes(JSON.parse(stored));
-    } catch {
-      /* ignore */
-    }
-    setHydrated(true);
-  }, []);
-
-  // Persist whenever programmes changes (after hydration)
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem("nexusai_programmes", JSON.stringify(programmes));
-    } catch {
-      /* ignore */
-    }
-  }, [programmes, hydrated]);
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
 
   const addProgramme = useCallback((p: Programme) => {
     setProgrammes((prev) => [p, ...prev]);

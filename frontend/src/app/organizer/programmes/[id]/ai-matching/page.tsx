@@ -1,18 +1,34 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
-import type { MatchResult, ShortlistItem } from "@/types";
+import { fetchProgrammeMatches } from "@/lib/api";
+import type { MatchResult, MatchResultsGroup, ShortlistItem } from "@/types";
 
 export default function AIMatchingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [shortlist, setShortlist] = useState<ShortlistItem[]>([]);
+  const [results, setResults] = useState<MatchResultsGroup>({
+    companies: [],
+    mentors: [],
+    partners: [],
+    serviceProviders: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProgrammeMatches(id)
+      .then(setResults)
+      .catch(() => setError("Failed to load matching results."))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const handleAdd = (result: MatchResult) => {
     const existing = shortlist.find((s) => s.matchResultId === result.id);
@@ -26,7 +42,7 @@ export default function AIMatchingPage({ params }: { params: Promise<{ id: strin
       actorName: result.actorName,
       matchScore: result.matchScore,
       addedAt: new Date().toISOString(),
-      addedBy: "Sarah Chen",
+      addedBy: "Organiser",
       isAdminSelected: false,
     };
     setShortlist((prev) => [...prev, newItem]);
@@ -65,25 +81,30 @@ export default function AIMatchingPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <div className="p-8">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Match results — left 2/3 */}
-          <div className="lg:col-span-2">
-            <MatchResultsSection
-              results={{ companies: [], mentors: [], partners: [], serviceProviders: [] }}
-              shortlist={shortlist}
-              onAddToShortlist={handleAdd}
-            />
+        {loading && (
+          <p className="text-sm text-slate-500">Running AI matching…</p>
+        )}
+        {error && (
+          <p className="text-sm text-red-500">{error}</p>
+        )}
+        {!loading && !error && (
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <MatchResultsSection
+                results={results}
+                shortlist={shortlist}
+                onAddToShortlist={handleAdd}
+              />
+            </div>
+            <div>
+              <ShortlistPanel
+                items={shortlist}
+                onRemove={handleRemove}
+                onSubmit={handleSubmit}
+              />
+            </div>
           </div>
-
-          {/* Shortlist — right 1/3 */}
-          <div>
-            <ShortlistPanel
-              items={shortlist}
-              onRemove={handleRemove}
-              onSubmit={handleSubmit}
-            />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

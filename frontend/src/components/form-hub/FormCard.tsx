@@ -2,6 +2,7 @@
 
 import { Copy, ExternalLink, BarChart2, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface FormCardProps {
   title: string;
@@ -24,8 +25,11 @@ export default function FormCard({
   lastUpdated,
   isActive = true,
 }: FormCardProps) {
+  const isInternal = url.startsWith("/");
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(url).catch(() => {});
+    const fullUrl = isInternal ? `${window.location.origin}${url}` : url;
+    navigator.clipboard.writeText(fullUrl).catch(() => {});
   };
 
   return (
@@ -69,10 +73,17 @@ export default function FormCard({
           Copy Link
         </Button>
         <Button size="sm" variant="outline" className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-slate-600 dark:text-white dark:hover:bg-slate-700" asChild>
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-3.5 w-3.5" />
-            Open Form
-          </a>
+          {isInternal ? (
+            <Link href={url}>
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open Form
+            </Link>
+          ) : (
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open Form
+            </a>
+          )}
         </Button>
         <Button size="sm" variant="ghost" className="gap-1.5 text-slate-500 hover:text-violet-700 hover:bg-violet-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700">
           <BarChart2 className="h-3.5 w-3.5" />
@@ -82,3 +93,4 @@ export default function FormCard({
     </div>
   );
 }
+

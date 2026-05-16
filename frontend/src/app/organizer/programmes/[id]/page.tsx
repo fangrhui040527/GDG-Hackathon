@@ -19,17 +19,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { fetchProgramme } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { fetchProgramme, deleteProgramme as apiDeleteProgramme, submitProgramme as apiSubmitProgramme, toProgramme } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import type { Programme } from "@/types";
 
 export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [programme, setProgramme] = useState<Programme | null>(null);
 
   useEffect(() => {
-    fetchProgramme(id).then(setProgramme).catch(() => {});
+    fetchProgramme(id).then(setProgramme).catch((e) => console.error("Failed to load programme:", e));
   }, [id]);
 
   if (!programme) {
@@ -72,7 +74,15 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
               <Button
                 variant="outline"
                 className="gap-1.5 text-violet-700 border-violet-200 hover:bg-violet-50"
-                onClick={() => { updateProgrammeStatus(id, "submitted"); router.push("/organizer/submitted"); }}
+                onClick={async () => {
+                  try {
+                    const dto = await apiSubmitProgramme(id);
+                    setProgramme(toProgramme(dto));
+                    router.push("/organizer/submitted");
+                  } catch (e) {
+                    console.error("Submit failed:", e);
+                  }
+                }}
               >
                 <Send className="h-4 w-4" />
                 Submit to Admin
@@ -93,7 +103,14 @@ export default function ProgrammeDetailPage({ params }: { params: Promise<{ id: 
               variant="outline"
               size="sm"
               className="gap-1.5 text-red-500 border-red-100 hover:bg-red-50"
-              onClick={() => { deleteProgramme(id); router.push("/organizer/my-programmes"); }}
+              onClick={async () => {
+                try {
+                  await apiDeleteProgramme(id);
+                  router.push("/organizer/my-programmes");
+                } catch (e) {
+                  console.error("Delete failed:", e);
+                }
+              }}
             >
               <Trash2 className="h-4 w-4" />
               Delete

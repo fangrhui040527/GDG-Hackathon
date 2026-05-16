@@ -17,7 +17,7 @@ export default function AdminMatchReviewPage() {
     fetchProgrammes()
       .then((all) => all.filter((p) => ["approved", "published", "active"].includes(p.status)))
       .then(setProgrammes)
-      .catch(() => {});
+      .catch((e) => console.error("Failed to load programmes:", e));
   }, []);
 
   return (

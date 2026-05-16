@@ -7,6 +7,7 @@ from typing import Any, Optional
 from sqlalchemy import (
     Date,
     DateTime,
+    Enum as SAEnum,
     ForeignKey,
     Integer,
     String,
@@ -200,7 +201,10 @@ class Partner(Base, TimestampMixin):
 
     partner_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organisation_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    organisation_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    organisation_type: Mapped[str] = mapped_column(
+        SAEnum("Personal", "Business", "Listed", "International", name="org_type_enum", create_type=False),
+        nullable=False,
+    )
     country: Mapped[str] = mapped_column(String(255), nullable=False)
     website: Mapped[Optional[str]] = mapped_column(String(255))
     contact_person_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -220,12 +224,12 @@ class ServiceProvider(Base, TimestampMixin):
     sp_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organisation_name: Mapped[str] = mapped_column(String(255), nullable=False)
     service_provider_type: Mapped[str] = mapped_column(
-        String(100),
+        SAEnum("Not Specified", name="service_provider_type_enum", create_type=False),
         nullable=False,
         default=ServiceProviderTypeEnum.NotSpecified.value,
     )
     country_region: Mapped[str] = mapped_column(
-        String(100),
+        SAEnum("Not Specified", name="country_region_enum", create_type=False),
         nullable=False,
         default=CountryRegionEnum.NotSpecified.value,
     )
@@ -236,17 +240,17 @@ class ServiceProvider(Base, TimestampMixin):
     services_offered: Mapped[str] = mapped_column(Text, nullable=False)
     detailed_service_description: Mapped[str] = mapped_column(Text, nullable=False)
     target_company_stage: Mapped[str] = mapped_column(
-        String(100),
+        SAEnum("Not Specified", name="target_company_stage_enum", create_type=False),
         nullable=False,
         default=TargetCompanyStageEnum.NotSpecified.value,
     )
     pricing_model: Mapped[str] = mapped_column(
-        String(100),
+        SAEnum("Not Specified", name="pricing_model_enum", create_type=False),
         nullable=False,
         default=PricingModelEnum.NotSpecified.value,
     )
     current_capacity: Mapped[str] = mapped_column(
-        String(100),
+        SAEnum("Not Specified", name="current_capacity_enum", create_type=False),
         nullable=False,
         default=CurrentCapacityEnum.NotSpecified.value,
     )

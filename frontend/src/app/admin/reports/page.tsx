@@ -12,8 +12,8 @@ export default function AdminReportsPage() {
   const [actors, setActors] = useState<ActorTableRow[]>([]);
 
   useEffect(() => {
-    fetchProgrammes().then(setProgrammes).catch(() => {});
-    fetchActors().then(setActors).catch(() => {});
+    fetchProgrammes().then(setProgrammes).catch((e) => console.error("Failed to load programmes:", e));
+    fetchActors().then(setActors).catch((e) => console.error("Failed to load actors:", e));
   }, []);
 
   const totalProgrammes = programmes.length;
