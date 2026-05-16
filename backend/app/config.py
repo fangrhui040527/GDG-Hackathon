@@ -7,20 +7,20 @@ ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
 
 class Settings(BaseSettings):
-    gcp_project_id: str
-    gcp_location: str
+    gcp_project_id: str = ""
+    gcp_location: str = "us-central1"
 
-    vertex_search_data_store_id: str
-    vertex_search_serving_config_id: str
+    vertex_search_data_store_id: str = ""
+    vertex_search_serving_config_id: str = ""
 
-    vertex_embeddings_model: str
-    vertex_embeddings_location: str
+    vertex_embeddings_model: str = "text-embedding-005"
+    vertex_embeddings_location: str = "us-central1"
 
-    bigquery_project_id: str
-    bigquery_location: str
-    bigquery_dataset_id: str 
-    bigquery_vector_table: str 
-    bigquery_vector_index: str 
+    bigquery_project_id: str = ""
+    bigquery_location: str = "US"
+    bigquery_dataset_id: str = ""
+    bigquery_vector_table: str = ""
+    bigquery_vector_index: str = ""
 
     class Config:
         env_prefix = "APP_"

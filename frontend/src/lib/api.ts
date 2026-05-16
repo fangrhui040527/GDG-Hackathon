@@ -259,8 +259,86 @@ export async function registerServiceProvider(data: Record<string, unknown>): Pr
   return apiPost("/profiles/service-providers", data);
 }
 
+function toMatchResult(raw: Record<string, unknown>, actorType: import("@/types").ActorType): import("@/types").MatchResult {
+  const score = typeof raw.score === "number" ? Math.round(raw.score * 100) : Number(raw.score ?? 0);
+  const normalised = score > 1 ? score : Math.round(score * 100);
+  return {
+    id: String(raw.entity_id ?? raw.id ?? Math.random()),
+    actorId: String(raw.entity_id ?? raw.id ?? ""),
+    actorType,
+    actorName: String(raw.entity_name ?? raw.actorName ?? "Unknown"),
+    profileSummary: String(raw.rationale ?? raw.profileSummary ?? ""),
+    matchScore: normalised,
+    matchTier: normalised >= 85 ? "Excellent" : normalised >= 70 ? "Strong" : normalised >= 55 ? "Good" : "Fair",
+    aiExplanation: String(raw.rationale ?? raw.aiExplanation ?? ""),
+    availabilityLabel: "Available",
+    isAvailable: true,
+    tags: Array.isArray(raw.fit_factors) ? (raw.fit_factors as string[]) : Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
+  };
+}
+
 export async function fetchProgrammeMatches(programmeId: string): Promise<import("@/types").MatchResultsGroup> {
-  return apiGet(`/programmes/${programmeId}/match`);
+  const raw = await apiGet<Record<string, unknown[]>>(`/programmes/${programmeId}/match`);
+  return {
+    companies:        ((raw.companies        ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "company")),
+    mentors:          ((raw.mentors          ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "mentor")),
+    partners:         ((raw.partners         ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "partner")),
+    serviceProviders: ((raw.serviceProviders ?? raw.service_providers ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "service_provider")),
+  };
+}
+
+/* ── Shortlist API ───────────────────────────────────────────── */
+
+type ShortlistItemDTO = {
+  id: string;
+  programme_id: string;
+  match_result_id: string;
+  actor_id: string;
+  actor_type: string;
+  actor_name: string;
+  match_score: number;
+  added_at: string;
+  added_by: string;
+  is_admin_selected: boolean;
+};
+
+function toShortlistItem(dto: ShortlistItemDTO): import("@/types").ShortlistItem {
+  return {
+    id: dto.id,
+    programmeId: dto.programme_id,
+    matchResultId: dto.match_result_id,
+    actorId: dto.actor_id,
+    actorType: dto.actor_type as import("@/types").ActorType,
+    actorName: dto.actor_name,
+    matchScore: dto.match_score,
+    addedAt: dto.added_at,
+    addedBy: dto.added_by,
+    isAdminSelected: dto.is_admin_selected,
+  };
+}
+
+export async function fetchShortlist(programmeId: string): Promise<import("@/types").ShortlistItem[]> {
+  const dtos = await apiGet<ShortlistItemDTO[]>(`/programmes/${programmeId}/shortlist`);
+  return dtos.map(toShortlistItem);
+}
+
+export async function addToShortlist(
+  programmeId: string,
+  item: { matchResultId: string; actorId: string; actorType: string; actorName: string; matchScore: number }
+): Promise<import("@/types").ShortlistItem> {
+  const dto = await apiPost<ShortlistItemDTO>(`/programmes/${programmeId}/shortlist`, {
+    match_result_id: item.matchResultId,
+    actor_id: item.actorId,
+    actor_type: item.actorType,
+    actor_name: item.actorName,
+    match_score: item.matchScore,
+  });
+  return toShortlistItem(dto);
+}
+
+export async function removeFromShortlist(programmeId: string, itemId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/programmes/${programmeId}/shortlist/${itemId}`, { method: "DELETE" });
+  if (!response.ok) throw new Error(await response.text());
 }
 
 /* ── Dashboard API ───────────────────────────────────────────── */

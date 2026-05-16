@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { FileText, Globe, Activity, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import StatCard from "@/components/dashboard/StatCard";
 import ProgrammeCard from "@/components/dashboard/ProgrammeCard";
 import { fetchProgrammes, fetchActors, deleteProgramme as apiDeleteProgramme } from "@/lib/api";
@@ -80,41 +79,74 @@ export default function AdminDashboardPage() {
           />
         </div>
 
-        {/* Pending Review */}
-        {pendingProgrammes.length > 0 && (
-          <section>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">Pending Review</h2>
-              <Button asChild variant="ghost" size="sm" className="text-blue-700">
-                <Link href="/admin/submissions">View all</Link>
-              </Button>
+        {/* All Programmes – tabbed */}
+        <section>
+          <Tabs defaultValue="all">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">All Programmes</h2>
+              <TabsList className="bg-slate-100 border border-slate-200 rounded-full p-1">
+                <TabsTrigger value="all" className="rounded-full px-3 text-xs data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow">
+                  All
+                </TabsTrigger>
+                <TabsTrigger value="pending" className="rounded-full px-3 text-xs data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow">
+                  Pending
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="rounded-full px-3 text-xs data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow">
+                  Approved
+                </TabsTrigger>
+                <TabsTrigger value="published" className="rounded-full px-3 text-xs data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow">
+                  Published
+                </TabsTrigger>
+              </TabsList>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {pendingProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin"
-                  onDelete={handleDelete} />
-              ))}
-            </div>
-          </section>
-        )}
 
-        {/* Published */}
-        {publishedProgrammes.length > 0 && (
-          <section>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">Published Programmes</h2>
-              <Button asChild variant="ghost" size="sm" className="text-blue-700">
-                <Link href="/admin/published">View all</Link>
-              </Button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {publishedProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} role="admin"
-                  onDelete={handleDelete} />
-              ))}
-            </div>
-          </section>
-        )}
+            <TabsContent value="all">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {programmes.length === 0 ? (
+                  <p className="col-span-3 py-12 text-center text-slate-400">No programmes yet.</p>
+                ) : programmes.map((p) => (
+                  <ProgrammeCard key={p.id} programme={p} role="admin" onDelete={handleDelete} />
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="pending">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {pendingProgrammes.length > 0 ? (
+                  pendingProgrammes.map((p) => (
+                    <ProgrammeCard key={p.id} programme={p} role="admin" onDelete={handleDelete} />
+                  ))
+                ) : (
+                  <p className="col-span-3 py-12 text-center text-slate-400">No pending submissions.</p>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="approved">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {programmes.filter((p) => p.status === "approved").length > 0 ? (
+                  programmes.filter((p) => p.status === "approved").map((p) => (
+                    <ProgrammeCard key={p.id} programme={p} role="admin" onDelete={handleDelete} />
+                  ))
+                ) : (
+                  <p className="col-span-3 py-12 text-center text-slate-400">No approved programmes.</p>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="published">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {publishedProgrammes.length > 0 ? (
+                  publishedProgrammes.map((p) => (
+                    <ProgrammeCard key={p.id} programme={p} role="admin" onDelete={handleDelete} />
+                  ))
+                ) : (
+                  <p className="col-span-3 py-12 text-center text-slate-400">No published programmes.</p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </section>
       </div>
     </div>
   );

@@ -2,51 +2,84 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, CheckCircle, XCircle, RotateCcw, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MatchResultsSection from "@/components/ai-matching/MatchResultsSection";
 import ShortlistPanel from "@/components/shortlist/ShortlistPanel";
-import { fetchProgramme, approveProgramme, rejectProgramme, publishProgramme, requestChangesProgramme, toProgramme } from "@/lib/api";
+import { fetchProgramme, fetchProgrammeMatches, fetchShortlist, addToShortlist, removeFromShortlist, approveProgramme, rejectProgramme, publishProgramme, requestChangesProgramme, toProgramme } from "@/lib/api";
 import { STATUS_LABELS } from "@/lib/constants";
-import type { Programme, MatchResult, ShortlistItem } from "@/types";
+import type { Programme, MatchResult, MatchResultsGroup, ShortlistItem } from "@/types";
 
 export default function AdminSubmissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [programme, setProgramme] = useState<Programme | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [adminShortlist, setAdminShortlist] = useState<ShortlistItem[]>([]);
+  const [matchResults, setMatchResults] = useState<MatchResultsGroup>({
+    companies: [],
+    mentors: [],
+    partners: [],
+    serviceProviders: [],
+  });
+  const [matchLoading, setMatchLoading] = useState(true);
 
   useEffect(() => {
-    fetchProgramme(id).then(setProgramme).catch((e) => console.error("Failed to load programme:", e));
+    fetchProgramme(id).then(setProgramme).catch((e) => {
+      console.error("Failed to load programme:", e);
+      setLoadError("Programme not found or server is unavailable.");
+    });
+    fetchProgrammeMatches(id)
+      .then(setMatchResults)
+      .catch((e) => console.error("Failed to load match results:", e))
+      .finally(() => setMatchLoading(false));
+    fetchShortlist(id)
+      .then(setAdminShortlist)
+      .catch((e) => console.error("Failed to load shortlist:", e));
   }, [id]);
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <p className="text-slate-500">{loadError}</p>
+        <button onClick={() => router.push("/admin/submissions")} className="text-sm text-blue-600 underline">
+          Back to Submissions
+        </button>
+      </div>
+    );
+  }
 
   if (!programme) {
     return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
   }
 
-  const handleAdd = (result: MatchResult) => {
+  const handleAdd = async (result: MatchResult) => {
     const existing = adminShortlist.find((s) => s.matchResultId === result.id);
     if (existing) return;
-    setAdminShortlist((prev) => [
-      ...prev,
-      {
-        id: `admin-sl-${Date.now()}`,
-        programmeId: id,
+    try {
+      const saved = await addToShortlist(id, {
         matchResultId: result.id,
         actorId: result.actorId,
         actorType: result.actorType,
         actorName: result.actorName,
         matchScore: result.matchScore,
-        addedAt: new Date().toISOString(),
-        addedBy: "Admin",
-        isAdminSelected: true,
-      },
-    ]);
+      });
+      setAdminShortlist((prev) => [...prev, saved]);
+    } catch (e) {
+      console.error("Failed to add to shortlist:", e);
+    }
   };
 
-  const handleRemove = (itemId: string) => {
-    setAdminShortlist((prev) => prev.filter((s) => s.id !== itemId));
+  const handleRemove = async (itemId: string) => {
+    try {
+      await removeFromShortlist(id, itemId);
+      setAdminShortlist((prev) => prev.filter((s) => s.id !== itemId));
+    } catch (e) {
+      console.error("Failed to remove from shortlist:", e);
+    }
   };
 
   return (
@@ -72,19 +105,19 @@ export default function AdminSubmissionDetailPage({ params }: { params: Promise<
           </div>
           {/* Admin action buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => requestChangesProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50">
+            <Button onClick={() => requestChangesProgramme(id).then((dto) => { setProgramme(toProgramme(dto)); router.push("/admin/submissions"); })} variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50">
               <RotateCcw className="h-4 w-4" />
               Request Changes
             </Button>
-            <Button onClick={() => rejectProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50">
+            <Button onClick={() => rejectProgramme(id).then((dto) => { setProgramme(toProgramme(dto)); router.push("/admin/submissions"); })} variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50">
               <XCircle className="h-4 w-4" />
               Reject
             </Button>
-            <Button onClick={() => approveProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+            <Button onClick={() => approveProgramme(id).then((dto) => { setProgramme(toProgramme(dto)); router.push("/admin/dashboard"); })} variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
               <CheckCircle className="h-4 w-4" />
               Approve
             </Button>
-            <Button onClick={() => publishProgramme(id).then((dto) => setProgramme(toProgramme(dto)))} variant="navy" size="sm" className="gap-1.5">
+            <Button onClick={() => publishProgramme(id).then((dto) => { setProgramme(toProgramme(dto)); router.push("/admin/dashboard"); })} variant="navy" size="sm" className="gap-1.5">
               <Globe className="h-4 w-4" />
               Publish Programme
             </Button>
@@ -111,11 +144,15 @@ export default function AdminSubmissionDetailPage({ params }: { params: Promise<
           <div className="lg:col-span-2 space-y-6">
             <div>
               <h2 className="mb-3 font-semibold text-slate-900">AI Matching Results</h2>
-              <MatchResultsSection
-                results={{ companies: [], mentors: [], partners: [], serviceProviders: [] }}
-                shortlist={adminShortlist}
-                onAddToShortlist={handleAdd}
-              />
+              {matchLoading ? (
+                <p className="text-sm text-slate-400">Loading match results…</p>
+              ) : (
+                <MatchResultsSection
+                  results={matchResults}
+                  shortlist={adminShortlist}
+                  onAddToShortlist={handleAdd}
+                />
+              )}
             </div>
           </div>
 

@@ -1,78 +1,37 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
-import RelationshipTable from "@/components/relationships/RelationshipTable";
-import type { Relationship } from "@/types";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import RelationshipGraph from "@/components/relationships/RelationshipGraph";
 
 export default function AdminRelationshipsPage() {
-  const [relationships, setRelationships] = useState<Relationship[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${API}/selections`);
-        if (!res.ok) throw new Error();
-        const selections = await res.json();
-        const mapped: Relationship[] = [];
-        for (const sel of selections) {
-          if (sel.approval_status !== "APPROVED") continue;
-          for (const item of sel.items ?? []) {
-            const typeMap: Record<string, Relationship["type"]> = {
-              MENTOR: "company_mentor",
-              PARTNER: "company_partner",
-              SP: "company_service_provider",
-              SERVICE_PROVIDER: "company_service_provider",
-              COMPANY: "company_programme",
-            };
-            mapped.push({
-              id: `rel-${sel.selection_id}-${item.id}`,
-              type: typeMap[item.entity_type] ?? "company_programme",
-              programmeId: String(sel.event_id ?? ""),
-              programmeName: sel.purpose ?? "Selection",
-              sourceId: String(sel.selection_id),
-              sourceName: sel.purpose ?? `Selection #${sel.selection_id}`,
-              sourceType: "Programme",
-              targetId: String(item.entity_id),
-              targetName: item.entity_name ?? `${item.entity_type} #${item.entity_id}`,
-              targetType: item.entity_type?.toLowerCase() ?? "unknown",
-              status: "active",
-              establishedAt: sel.approved_at ?? sel.created_at ?? new Date().toISOString(),
-            });
-          }
-        }
-        setRelationships(mapped);
-      } catch {
-        setRelationships([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
   return (
-    <div className="flex flex-col">
-      <div className="border-b border-slate-200 bg-white px-8 py-5">
-        <h1 className="text-2xl font-bold text-slate-900">Relationships</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
-          All established relationships between ecosystem actors.
-        </p>
+    <div className="flex h-[calc(100vh-0px)] flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5 flex-shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Visual Relationship Graph</h1>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Interactive network mapping of ecosystem actors and linkages.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            Filters
+          </button>
+          <button className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export Graph
+          </button>
+        </div>
       </div>
-      <div className="p-8">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-          </div>
-        ) : relationships.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-            <p className="text-sm text-slate-400">No approved relationships yet. Approve selections to see relationships here.</p>
-          </div>
-        ) : (
-          <RelationshipTable relationships={relationships} />
-        )}
+
+      {/* Graph (fills remaining height) */}
+      <div className="flex-1 overflow-hidden">
+        <RelationshipGraph />
       </div>
     </div>
   );
