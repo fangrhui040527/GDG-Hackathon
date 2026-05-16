@@ -26,7 +26,7 @@ export default function AdminMatchReviewPage() {
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
+                <tr className="border-b border-slate-100 bg-slate-50/50">
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Programme</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Date</th>
@@ -36,7 +36,7 @@ export default function AdminMatchReviewPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {programmes.map((programme) => (
-                  <tr key={programme.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={programme.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-6 py-4">
                       <p className="font-semibold text-slate-900 text-sm">{programme.name}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{programme.organiserName}</p>
@@ -49,7 +49,7 @@ export default function AdminMatchReviewPage() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4">
-                      <Button asChild variant="ghost" size="sm" className="gap-1 text-violet-600">
+                      <Button asChild variant="ghost" size="sm" className="gap-1 text-blue-700">
                         <Link href={`/admin/submissions/${programme.id}`}>
                           <Eye className="h-3.5 w-3.5" />
                           Review Matches

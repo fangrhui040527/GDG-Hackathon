@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard,
   PlusCircle,
   FolderOpen,
   Send,
   FileText,
-  User,
   LogOut,
   Zap,
+  Sun,
+  Moon,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,60 +27,100 @@ const navItems = [
 
 export default function OrganizerSidebar() {
   const pathname = usePathname();
+  const [isDark, setIsDark] = useState(false);
+
+  // Sidebar-only colours — does NOT touch document or localStorage
+  const bg       = isDark ? "bg-gray-900"   : "bg-gray-100";
+  const active   = isDark ? "bg-white text-gray-900 shadow-md"
+                          : "bg-gray-900 text-white shadow-md";
+  const inactive = isDark ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                          : "text-gray-500 hover:bg-gray-200 hover:text-gray-800";
+  const divider  = isDark ? "bg-gray-700"   : "bg-gray-300";
+  const logoBox  = isDark ? "bg-white"       : "bg-gray-900";
+  const logoIcon = isDark ? "text-gray-900"  : "text-white";
+  const label    = isDark ? "text-gray-200"  : "text-gray-700";
+
+  const themeActive   = isDark ? "bg-gray-700 text-white"
+                               : "bg-white text-gray-900 shadow-sm";
+  const themeInactive = isDark ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                               : "text-gray-400 hover:bg-gray-200 hover:text-gray-700";
+
+  // Shared classes
+  const row  = "flex h-10 w-full items-center gap-3 rounded-xl transition-all duration-150";
+  const iconWrap = "flex h-10 w-10 shrink-0 items-center justify-center";
+  const txt  = "whitespace-nowrap text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-150 delay-100";
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-slate-200 bg-white">
+    <aside
+      className={cn(
+        "group fixed inset-y-0 left-0 z-40 flex w-16 hover:w-56 flex-col overflow-hidden py-3 transition-[width] duration-200 ease-in-out",
+        bg
+      )}
+    >
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 px-5 border-b border-slate-100">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900">
-          <Zap className="h-5 w-5 text-white" />
+      <div className="flex h-10 w-full shrink-0 items-center gap-3 px-3 mb-3">
+        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", logoBox)}>
+          <Zap className={cn("h-5 w-5", logoIcon)} />
         </div>
-        <div>
-          <p className="text-sm font-bold text-slate-900 leading-tight">Organizer</p>
-          <p className="text-sm font-bold text-slate-900 leading-tight">Portal</p>
-          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none mt-0.5">Ecosystem Management</p>
-        </div>
+        <span className={cn(txt, label, "text-sm font-bold")}>NexusAI</span>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {navItems.map(({ href, label, icon: Icon }) => {
+      {/* Theme toggles */}
+      <div className="flex w-full flex-col gap-0.5 px-3">
+        <button
+          onClick={() => setIsDark(false)}
+          title="Light mode"
+          className={cn(row, !isDark ? themeActive : themeInactive)}
+        >
+          <span className={iconWrap}><Sun className="h-[18px] w-[18px]" /></span>
+          <span className={cn(txt, label)}>Light</span>
+        </button>
+        <button
+          onClick={() => setIsDark(true)}
+          title="Dark mode"
+          className={cn(row, isDark ? themeActive : themeInactive)}
+        >
+          <span className={iconWrap}><Moon className="h-[18px] w-[18px]" /></span>
+          <span className={cn(txt, label)}>Dark</span>
+        </button>
+      </div>
+
+      <div className={cn("my-3 mx-3 h-px shrink-0", divider)} />
+
+      {/* Nav */}
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3">
+        {navItems.map(({ href, label: itemLabel, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}
               href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-violet-600 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              )}
+              title={itemLabel}
+              className={cn(row, isActive ? active : inactive)}
             >
-              <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-slate-400")} />
-              {label}
+              <span className={iconWrap}>
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <span className={cn(txt, isActive ? "" : label)}>{itemLabel}</span>
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-slate-100 px-3 py-4 space-y-0.5">
-        <Link
-          href="/profile"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-        >
-          <User className="h-4 w-4 text-slate-400" />
-          Profile
+      <div className="flex flex-col gap-0.5 px-3 shrink-0">
+        <div className={cn("mb-1 h-px", divider)} />
+        <Link href="/profile" title="Help" className={cn(row, inactive)}>
+          <span className={iconWrap}><HelpCircle className="h-[18px] w-[18px]" /></span>
+          <span className={cn(txt, label)}>Help</span>
         </Link>
-        <Link
-          href="/login"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-        >
-          <LogOut className="h-4 w-4 text-slate-400" />
-          Logout
+        <Link href="/login" title="Logout" className={cn(row, inactive)}>
+          <span className={iconWrap}><LogOut className="h-[18px] w-[18px]" /></span>
+          <span className={cn(txt, label)}>Logout</span>
         </Link>
       </div>
     </aside>
   );
 }
+
+

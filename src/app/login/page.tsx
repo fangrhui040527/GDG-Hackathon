@@ -3,20 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Zap, Eye, EyeOff, ShieldCheck, Layers,
-  Sparkles, Users, TrendingUp, CheckCircle2,
-} from "lucide-react";
+import { Zap, Eye, EyeOff, ShieldCheck, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const FEATURES = [
-  { icon: Sparkles, text: "AI-powered actor matching" },
-  { icon: Users, text: "Multi-actor ecosystem management" },
-  { icon: TrendingUp, text: "Real-time programme analytics" },
-  { icon: CheckCircle2, text: "Streamlined admin governance" },
-];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,90 +23,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* ── Left decorative panel ── */}
-      <div className="hidden lg:flex lg:w-[52%] flex-col justify-between bg-gradient-to-br from-violet-600 via-violet-700 to-violet-800 p-14 relative overflow-hidden">
-        {/* Background blobs */}
-        <div className="pointer-events-none absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-violet-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-pink-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-400/10 blur-2xl" />
+    <div className="flex min-h-screen items-center justify-center bg-[#fafafa] p-8">
+      <div className="w-full max-w-[420px]">
 
-        {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900">
-            <Zap className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <span className="text-lg font-bold text-white tracking-tight">Organizer</span>
-            <p className="text-[10px] text-violet-200 uppercase tracking-widest leading-none mt-0.5">Ecosystem Management</p>
-          </div>
-        </div>
-
-        {/* Centre content */}
-        <div className="relative z-10 flex flex-col gap-8">
-          <div>
-            <h2 className="text-4xl font-extrabold leading-tight text-white">
-              Power your<br />
-              <span className="bg-gradient-to-r from-violet-300 to-pink-300 bg-clip-text text-transparent">
-                innovation ecosystem
-              </span>
-            </h2>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-violet-200/80">
-              Connect the right companies, mentors, and partners — powered by AI-driven matching and seamless programme governance.
-            </p>
-          </div>
-
-          <ul className="space-y-3">
-            {FEATURES.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-3">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
-                  <Icon className="h-3.5 w-3.5 text-violet-200" />
-                </div>
-                <span className="text-sm text-violet-100">{text}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: "120+", label: "Programmes" },
-              { value: "2.4k", label: "Actors" },
-              { value: "95%", label: "Match Rate" },
-            ].map(({ value, label }) => (
-              <div key={label} className="rounded-2xl bg-white/8 p-4 text-center ring-1 ring-white/10 backdrop-blur-sm">
-                <p className="text-2xl font-bold text-white">{value}</p>
-                <p className="mt-0.5 text-xs text-violet-300">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom quote */}
-        <div className="relative z-10">
-          <blockquote className="border-l-2 border-violet-400/50 pl-4">
-            <p className="text-sm italic text-violet-200/70">
-              &ldquo;NexusAI cut our matching time by 60% and surfaced connections we never would have found manually.&rdquo;
-            </p>
-            <footer className="mt-2 text-xs text-violet-400">— Programme Lead, Global Fintech Accelerator</footer>
-          </blockquote>
-        </div>
-      </div>
-
-      {/* ── Right form panel ── */}
-      <div className="flex flex-1 items-center justify-center bg-[#fafafa] p-8">
-        <div className="w-full max-w-[420px]">
-
-          {/* Mobile logo */}
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
+          {/* Logo */}
+          <div className="mb-8 flex items-center justify-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-purple-700">
               <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-slate-900">NexusAI</span>
+            <div>
+              <span className="text-xl font-bold text-slate-900">NexusAI</span>
+              <p className="text-[11px] text-slate-400 uppercase tracking-widest leading-none">Ecosystem Management</p>
+            </div>
           </div>
 
           {/* Heading */}
-          <div className="mb-8">
+          <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Welcome back</h1>
             <p className="mt-2 text-sm text-slate-500">Sign in to your portal and pick up where you left off.</p>
           </div>
@@ -221,7 +143,6 @@ export default function LoginPage() {
             © {new Date().getFullYear()} NexusAI · All rights reserved.
           </p>
         </div>
-      </div>
     </div>
   );
 }

@@ -31,12 +31,30 @@ export default function AdminDashboardPage() {
             label="Pending Submissions"
             value={ADMIN_STATS.pendingSubmissions}
             icon={FileText}
-            highlight
-            color="violet"
+            color="pink"
+            variant="minimal"
           />
-          <StatCard label="Published" value={ADMIN_STATS.publishedProgrammes} icon={Globe} color="emerald" />
-          <StatCard label="Active Programmes" value={ADMIN_STATS.activeProgrammes} icon={Activity} color="blue" />
-          <StatCard label="Total Actors" value={ADMIN_STATS.totalActors} icon={Users} />
+          <StatCard
+            label="Published"
+            value={ADMIN_STATS.publishedProgrammes}
+            icon={Globe}
+            color="emerald"
+            variant="minimal"
+          />
+          <StatCard
+            label="Active Programmes"
+            value={ADMIN_STATS.activeProgrammes}
+            icon={Activity}
+            color="blue"
+            variant="minimal"
+          />
+          <StatCard
+            label="Total Actors"
+            value={ADMIN_STATS.totalActors}
+            icon={Users}
+            color="violet"
+            variant="minimal"
+          />
         </div>
 
         {/* Pending Review */}
@@ -44,13 +62,13 @@ export default function AdminDashboardPage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Pending Review</h2>
-              <Button asChild variant="ghost" size="sm" className="text-violet-600">
+              <Button asChild variant="ghost" size="sm" className="text-blue-700">
                 <Link href="/admin/submissions">View all</Link>
               </Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {pendingProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} href={`/admin/submissions/${programme.id}`} />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
               ))}
             </div>
           </section>
@@ -61,13 +79,13 @@ export default function AdminDashboardPage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Published Programmes</h2>
-              <Button asChild variant="ghost" size="sm" className="text-violet-600">
+              <Button asChild variant="ghost" size="sm" className="text-blue-700">
                 <Link href="/admin/published">View all</Link>
               </Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {publishedProgrammes.slice(0, 3).map((programme) => (
-                <ProgrammeCard key={programme.id} programme={programme} href={`/admin/submissions/${programme.id}`} />
+                <ProgrammeCard key={programme.id} programme={programme} role="admin" />
               ))}
             </div>
           </section>
