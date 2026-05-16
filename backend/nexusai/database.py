@@ -128,6 +128,36 @@ class Event(Base, TimestampMixin):
     participants: Mapped[list["EventParticipant"]] = relationship(back_populates="event")
 
 
+class Programme(Base, TimestampMixin):
+    """Ecosystem programme — the top-level container for matching & management."""
+    __tablename__ = "programmes"
+
+    programme_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    category: Mapped[Optional[str]] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(50), default="draft")
+    start_date: Mapped[Optional[date]] = mapped_column(Date)
+    end_date: Mapped[Optional[date]] = mapped_column(Date)
+    cover_image: Mapped[Optional[str]] = mapped_column(String(500))
+
+    # Requirements
+    target_industry: Mapped[Optional[str]] = mapped_column(String(255))
+    target_country: Mapped[Optional[str]] = mapped_column(String(255))
+    target_company_stage: Mapped[Optional[str]] = mapped_column(String(100))
+    required_mentors: Mapped[int] = mapped_column(Integer, default=0)
+    required_companies: Mapped[int] = mapped_column(Integer, default=0)
+    required_partners: Mapped[int] = mapped_column(Integer, default=0)
+    required_service_providers: Mapped[int] = mapped_column(Integer, default=0)
+    eligibility_criteria: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Tracking
+    organiser_id: Mapped[Optional[str]] = mapped_column(String(255))
+    organiser_name: Mapped[Optional[str]] = mapped_column(String(255))
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+
 class Mentor(Base, TimestampMixin):
     __tablename__ = "mentors"
 

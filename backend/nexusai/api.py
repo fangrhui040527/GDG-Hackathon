@@ -22,6 +22,7 @@ from nexusai.database import (
     Mentor,
     Notification,
     Partner,
+    Programme,
     Selection,
     SelectionItem,
     ServiceProvider,
@@ -205,6 +206,50 @@ class NotificationOut(BaseModel):
     body: str | None = None
     read_at: datetime | None = None
     created_at: datetime | None = None
+
+
+class ProgrammeIn(BaseModel):
+    name: str
+    description: str = ""
+    category: str = ""
+    start_date: date | None = None
+    end_date: date | None = None
+    cover_image: str = ""
+    target_industry: str = ""
+    target_country: str = ""
+    target_company_stage: str = ""
+    required_mentors: int = 0
+    required_companies: int = 0
+    required_partners: int = 0
+    required_service_providers: int = 0
+    eligibility_criteria: str = ""
+    organiser_name: str = ""
+
+
+class ProgrammeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    programme_id: int
+    name: str
+    description: str | None = None
+    category: str | None = None
+    status: str
+    start_date: date | None = None
+    end_date: date | None = None
+    cover_image: str | None = None
+    target_industry: str | None = None
+    target_country: str | None = None
+    target_company_stage: str | None = None
+    required_mentors: int = 0
+    required_companies: int = 0
+    required_partners: int = 0
+    required_service_providers: int = 0
+    eligibility_criteria: str | None = None
+    organiser_id: str | None = None
+    organiser_name: str | None = None
+    submitted_at: datetime | None = None
+    published_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 def create_default_session_factory() -> sessionmaker[Session]:
@@ -447,6 +492,125 @@ def create_app(
     @app.get("/events", response_model=list[EventOut])
     def list_events(db: Db):
         return db.scalars(select(Event).order_by(Event.created_at.desc())).all()
+
+    # ── Programme CRUD ────────────────────────────────────────
+
+    @app.post("/programmes", response_model=ProgrammeOut)
+    def create_programme(payload: ProgrammeIn, db: Db):
+        programme = Programme(**payload.model_dump())
+        programme.status = "draft"
+        db.add(programme)
+        db.flush()
+        log_audit(db, action="CREATE", entity_type="programme", entity_id=programme.programme_id, detail=payload.name)
+        return programme
+
+    @app.get("/programmes", response_model=list[ProgrammeOut])
+    def list_programmes(db: Db, status: str | None = None):
+        q = select(Programme).order_by(Programme.created_at.desc())
+        if status:
+            q = q.where(Programme.status == status)
+        return db.scalars(q).all()
+
+    @app.get("/programmes/{programme_id}", response_model=ProgrammeOut)
+    def get_programme(programme_id: int, db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        return prog
+
+    @app.patch("/programmes/{programme_id}", response_model=ProgrammeOut)
+    def update_programme(programme_id: int, payload: dict[str, Any], db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        allowed = {
+            "name", "description", "category", "start_date", "end_date",
+            "cover_image", "target_industry", "target_country", "target_company_stage",
+            "required_mentors", "required_companies", "required_partners",
+            "required_service_providers", "eligibility_criteria", "organiser_name",
+        }
+        for key, val in payload.items():
+            if key in allowed:
+                setattr(prog, key, val)
+        db.flush()
+        return prog
+
+    @app.post("/programmes/{programme_id}/submit", response_model=ProgrammeOut)
+    def submit_programme(programme_id: int, db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        if prog.status not in ("draft", "changes_requested"):
+            raise HTTPException(status_code=400, detail=f"Cannot submit from status '{prog.status}'")
+        prog.status = "submitted"
+        prog.submitted_at = datetime.now()
+        db.flush()
+        log_audit(db, action="SUBMIT", entity_type="programme", entity_id=programme_id)
+        return prog
+
+    @app.post("/programmes/{programme_id}/approve", response_model=ProgrammeOut)
+    def approve_programme(programme_id: int, db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        prog.status = "approved"
+        db.flush()
+        log_audit(db, action="APPROVE", entity_type="programme", entity_id=programme_id)
+        return prog
+
+    @app.post("/programmes/{programme_id}/publish", response_model=ProgrammeOut)
+    def publish_programme(programme_id: int, db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        prog.status = "published"
+        prog.published_at = datetime.now()
+        db.flush()
+        log_audit(db, action="PUBLISH", entity_type="programme", entity_id=programme_id)
+        return prog
+
+    @app.post("/programmes/{programme_id}/reject", response_model=ProgrammeOut)
+    def reject_programme(programme_id: int, db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        prog.status = "rejected"
+        db.flush()
+        log_audit(db, action="REJECT", entity_type="programme", entity_id=programme_id)
+        return prog
+
+    @app.post("/programmes/{programme_id}/request-changes", response_model=ProgrammeOut)
+    def request_changes_programme(programme_id: int, db: Db):
+        prog = db.get(Programme, programme_id)
+        if not prog:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        prog.status = "changes_requested"
+        db.flush()
+        return prog
+
+    # ── Actors aggregate endpoint ─────────────────────────────
+
+    @app.get("/actors")
+    def list_actors(db: Db):
+        """Unified list of all ecosystem actors for admin management."""
+        actors = []
+        for m in db.scalars(select(Mentor).order_by(Mentor.full_name)).all():
+            actors.append({"id": m.mentor_id, "name": m.full_name, "type": "mentor",
+                           "category": m.preferred_industry or "", "country": m.country or "",
+                           "status": "active", "registeredAt": str(m.created_at or "")})
+        for c in db.scalars(select(Company).order_by(Company.company_name)).all():
+            actors.append({"id": c.company_id, "name": c.company_name, "type": "company",
+                           "category": c.industry or "", "country": c.country or "",
+                           "status": "active", "registeredAt": str(c.created_at or "")})
+        for p in db.scalars(select(Partner).order_by(Partner.organisation_name)).all():
+            actors.append({"id": p.partner_id, "name": p.organisation_name, "type": "partner",
+                           "category": p.industries_of_interest or "", "country": p.country or "",
+                           "status": "active", "registeredAt": str(p.created_at or "")})
+        for s in db.scalars(select(ServiceProvider).order_by(ServiceProvider.organisation_name)).all():
+            actors.append({"id": s.sp_id, "name": s.organisation_name, "type": "service_provider",
+                           "category": s.services_offered or "", "country": getattr(s, 'country_region', '') or '',
+                           "status": "active", "registeredAt": str(s.created_at or "")})
+        return actors
 
     @app.post("/matches/recommend", response_model=MatchResponse)
     def recommend_matches(payload: MatchRequest, db: Db):
