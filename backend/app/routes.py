@@ -25,6 +25,8 @@ from app.models import (
     MatchGroup,
     MatchRecommendation,
     DashboardMetrics,
+    ShortlistItemCreate,
+    ShortlistItemDTO,
 )
 
 # Google Cloud services are optional — server works without them
@@ -42,8 +44,57 @@ router = APIRouter()
 
 # ── In-memory stores ──────────────────────────────────────────────────────────
 
-_programmes: dict[int, dict] = {}
-_programme_counter = 0
+_programmes: dict[int, dict] = {
+    1: {
+        "programme_id": 1,
+        "name": "Global FinTech",
+        "description": "achieve new technology",
+        "category": "Fintech",
+        "status": "submitted",
+        "start_date": "2026-05-19",
+        "end_date": "2026-05-22",
+        "cover_image": None,
+        "target_industry": "Financial Technology",
+        "target_country": "Malaysia",
+        "target_company_stage": "Growth",
+        "required_mentors": 4,
+        "required_companies": 10,
+        "required_partners": 3,
+        "required_service_providers": 2,
+        "eligibility_criteria": "anyone can join",
+        "organiser_id": None,
+        "organiser_name": "Organiser",
+        "submitted_at": "2026-05-16T18:24:14.490174+00:00",
+        "published_at": None,
+        "created_at": "2026-05-16T18:01:36.258594+00:00",
+        "updated_at": "2026-05-16T18:24:14.490174+00:00",
+    },
+    2: {
+        "programme_id": 2,
+        "name": "HealthTech Accelerator",
+        "description": "Accelerating digital health innovation across Southeast Asia",
+        "category": "Healthcare",
+        "status": "draft",
+        "start_date": "2026-06-01",
+        "end_date": "2026-08-31",
+        "cover_image": None,
+        "target_industry": "Healthcare",
+        "target_country": "Singapore",
+        "target_company_stage": "Seed",
+        "required_mentors": 6,
+        "required_companies": 8,
+        "required_partners": 4,
+        "required_service_providers": 3,
+        "eligibility_criteria": "Healthcare startups only",
+        "organiser_id": None,
+        "organiser_name": "Organiser",
+        "submitted_at": None,
+        "published_at": None,
+        "created_at": "2026-05-10T09:00:00.000000+00:00",
+        "updated_at": "2026-05-10T09:00:00.000000+00:00",
+    },
+}
+_programme_counter = 2
 
 _actors: list[dict] = [
     {"id": 1, "name": "Axiata Digital", "type": "company", "category": "Fintech", "country": "Malaysia", "status": "active", "registeredAt": "2025-01-10"},
@@ -54,6 +105,9 @@ _actors: list[dict] = [
 _actor_counter = len(_actors)
 
 _submissions: dict[str, list[dict]] = {"mentors": [], "companies": [], "partners": [], "service_providers": []}
+
+# shortlists keyed by programme_id (str)
+_shortlists: dict[str, list[dict]] = {}
 
 
 def _now() -> str:
@@ -190,6 +244,44 @@ def get_programme_matches(programme_id: int):
         ]
 
     return MatchGroup(mentors=_recs(3), companies=_recs(3), partners=_recs(2), service_providers=_recs(2))
+
+
+# ── Shortlist ─────────────────────────────────────────────────────────────────
+
+@router.get("/programmes/{programme_id}/shortlist", response_model=list[ShortlistItemDTO])
+def get_shortlist(programme_id: int):
+    return [ShortlistItemDTO(**item) for item in _shortlists.get(str(programme_id), [])]
+
+
+@router.post("/programmes/{programme_id}/shortlist", response_model=ShortlistItemDTO, status_code=201)
+def add_to_shortlist(programme_id: int, body: ShortlistItemCreate):
+    pid = str(programme_id)
+    if pid not in _shortlists:
+        _shortlists[pid] = []
+    # prevent duplicates
+    if any(s["match_result_id"] == body.match_result_id for s in _shortlists[pid]):
+        existing = next(s for s in _shortlists[pid] if s["match_result_id"] == body.match_result_id)
+        return ShortlistItemDTO(**existing)
+    item = {
+        "id": f"sl-{pid}-{len(_shortlists[pid]) + 1}",
+        "programme_id": pid,
+        "match_result_id": body.match_result_id,
+        "actor_id": body.actor_id,
+        "actor_type": body.actor_type,
+        "actor_name": body.actor_name,
+        "match_score": body.match_score,
+        "added_at": _now(),
+        "added_by": "Admin",
+        "is_admin_selected": True,
+    }
+    _shortlists[pid].append(item)
+    return ShortlistItemDTO(**item)
+
+
+@router.delete("/programmes/{programme_id}/shortlist/{item_id}", status_code=204)
+def remove_from_shortlist(programme_id: int, item_id: str):
+    pid = str(programme_id)
+    _shortlists[pid] = [s for s in _shortlists.get(pid, []) if s["id"] != item_id]
 
 
 # ── Actors ────────────────────────────────────────────────────────────────────

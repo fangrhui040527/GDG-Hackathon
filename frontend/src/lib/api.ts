@@ -286,6 +286,60 @@ export async function fetchProgrammeMatches(programmeId: string): Promise<import
   };
 }
 
+/* ── Shortlist API ───────────────────────────────────────────── */
+
+type ShortlistItemDTO = {
+  id: string;
+  programme_id: string;
+  match_result_id: string;
+  actor_id: string;
+  actor_type: string;
+  actor_name: string;
+  match_score: number;
+  added_at: string;
+  added_by: string;
+  is_admin_selected: boolean;
+};
+
+function toShortlistItem(dto: ShortlistItemDTO): import("@/types").ShortlistItem {
+  return {
+    id: dto.id,
+    programmeId: dto.programme_id,
+    matchResultId: dto.match_result_id,
+    actorId: dto.actor_id,
+    actorType: dto.actor_type as import("@/types").ActorType,
+    actorName: dto.actor_name,
+    matchScore: dto.match_score,
+    addedAt: dto.added_at,
+    addedBy: dto.added_by,
+    isAdminSelected: dto.is_admin_selected,
+  };
+}
+
+export async function fetchShortlist(programmeId: string): Promise<import("@/types").ShortlistItem[]> {
+  const dtos = await apiGet<ShortlistItemDTO[]>(`/programmes/${programmeId}/shortlist`);
+  return dtos.map(toShortlistItem);
+}
+
+export async function addToShortlist(
+  programmeId: string,
+  item: { matchResultId: string; actorId: string; actorType: string; actorName: string; matchScore: number }
+): Promise<import("@/types").ShortlistItem> {
+  const dto = await apiPost<ShortlistItemDTO>(`/programmes/${programmeId}/shortlist`, {
+    match_result_id: item.matchResultId,
+    actor_id: item.actorId,
+    actor_type: item.actorType,
+    actor_name: item.actorName,
+    match_score: item.matchScore,
+  });
+  return toShortlistItem(dto);
+}
+
+export async function removeFromShortlist(programmeId: string, itemId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/programmes/${programmeId}/shortlist/${itemId}`, { method: "DELETE" });
+  if (!response.ok) throw new Error(await response.text());
+}
+
 /* ── Dashboard API ───────────────────────────────────────────── */
 
 export async function fetchDashboard(): Promise<DashboardMetrics> {
