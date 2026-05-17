@@ -5,12 +5,18 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.ruff_cache/
 .venv/
+*.egg-info/
 
 # Node / Next.js
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 
 # Local logs
 *.log
+
+# Local benchmark output
+.benchmarks/
