@@ -34,14 +34,14 @@ const roleContent: Record<
 > = {
   organizer: {
     label: "Organizer",
-    email: "organizer@nexusai.io",
+    email: "organizer@yokoyoko.ai",
     portal: "Programme workspace",
     insight: "Build, submit, and track ecosystem programmes.",
     icon: Layers,
   },
   admin: {
     label: "Admin",
-    email: "admin@nexusai.io",
+    email: "admin@yokoyoko.ai",
     portal: "Command centre",
     insight: "Review submissions and publish high-confidence matches.",
     icon: ShieldCheck,
@@ -78,7 +78,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error("Login failed");
       const user = await res.json();
       localStorage.setItem(
-        "nexusai_session",
+        "yokoyoko_session",
         JSON.stringify({ ...user, role: role, loggedInAt: new Date().toISOString() })
       );
       router.push(role === "admin" ? "/admin/dashboard" : "/organizer/dashboard");
@@ -97,7 +97,7 @@ export default function LoginPage() {
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-600 shadow-lg shadow-violet-500/30">
             <Zap className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">NexusAI</span>
+          <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">YokoYoko AI</span>
         </div>
 
         <div className="mb-8">

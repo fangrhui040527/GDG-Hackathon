@@ -21,11 +21,9 @@ export type ProgrammeCategory =
   | "Other";
 
 export type CompanyStage =
-  | "Pre-Seed"
-  | "Seed"
-  | "Series A"
-  | "Series B"
-  | "Growth"
+  | "Personal Business"
+  | "Listed Company"
+  | "International Business"
   | "Any";
 
 export interface ProgrammeRequirements {

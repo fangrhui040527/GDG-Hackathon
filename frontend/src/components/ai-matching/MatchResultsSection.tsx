@@ -45,7 +45,7 @@ export default function MatchResultsSection({
               <MatchResultCard
                 key={result.id}
                 result={result}
-                isShortlisted={shortlist.some((s) => s.actorId === result.id)}
+                isShortlisted={shortlist.some((s) => s.actorId === result.actorId && s.actorType === result.actorType)}
                 onAddToShortlist={onAddToShortlist}
               />
             ))

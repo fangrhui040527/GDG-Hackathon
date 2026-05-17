@@ -29,9 +29,9 @@ import { cn } from "@/lib/utils";
 
 const MOCK_USER = {
   name: "Alex Morgan",
-  email: "organizer@nexusai.io",
+  email: "organizer@yokoyoko.ai",
   role: "organizer" as const,
-  organisation: "NexusAI Foundation",
+  organisation: "YokoYoko AI Foundation",
   joinedAt: "January 2025",
   location: "Kuala Lumpur, MY",
   stats: {

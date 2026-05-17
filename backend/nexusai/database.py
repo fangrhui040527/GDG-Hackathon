@@ -1,17 +1,21 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date, datetime, time, timezone
+from pathlib import Path
 from typing import Any, Optional
 
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
     Text,
     Time,
+    UniqueConstraint,
     create_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, sessionmaker
@@ -157,6 +161,11 @@ class Programme(Base, TimestampMixin):
     submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     published_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
+    shortlist_items: Mapped[list["ProgrammeShortlistItem"]] = relationship(
+        back_populates="programme",
+        cascade="all, delete-orphan",
+    )
+
 
 class Mentor(Base, TimestampMixin):
     __tablename__ = "mentors"
@@ -190,6 +199,7 @@ class Company(Base, TimestampMixin):
     business_stage: Mapped[Optional[str]] = mapped_column(Text)
     support_needed: Mapped[Optional[str]] = mapped_column(Text)
     availability: Mapped[Optional[str]] = mapped_column(String(255))
+    video: Mapped[Optional[str]] = mapped_column(Text)
     event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("events.event_id"))
 
     event: Mapped[Optional[Event]] = relationship(back_populates="companies")
@@ -326,6 +336,26 @@ class SelectionItem(Base):
     selection: Mapped[Selection] = relationship(back_populates="items")
 
 
+class ProgrammeShortlistItem(Base):
+    __tablename__ = "programme_shortlist_items"
+    __table_args__ = (
+        UniqueConstraint("programme_id", "match_result_id", name="uq_programme_shortlist_match"),
+    )
+
+    shortlist_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    programme_id: Mapped[int] = mapped_column(ForeignKey("programmes.programme_id"), nullable=False)
+    match_result_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    actor_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    actor_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    match_score: Mapped[float] = mapped_column(Float, nullable=False)
+    added_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
+    added_by: Mapped[str] = mapped_column(String(255), default="Admin", nullable=False)
+    is_admin_selected: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    programme: Mapped[Programme] = relationship(back_populates="shortlist_items")
+
+
 # ── Notification ──────────────────────────────────────────────
 
 class Notification(Base):
@@ -354,7 +384,7 @@ class AuditLog(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
 
 
-def create_postgres_engine(database_url: str):
+def create_postgres_engine(database_url: str, settings: Any | None = None):
     return create_engine(database_url, pool_pre_ping=True)
 
 
@@ -387,9 +417,12 @@ def create_cloud_sql_connector_engine(settings: Any):
 
 
 def create_database_engine(settings: Any):
-    if settings.cloud_sql_connection_name:
+    mode = getattr(settings, "database_connector_mode", "direct")
+    if mode == "cloud_sql":
         return create_cloud_sql_connector_engine(settings)
-    return create_postgres_engine(settings.database_url)
+    if mode != "direct":
+        raise ValueError("DATABASE_CONNECTOR_MODE must be direct or cloud_sql")
+    return create_postgres_engine(settings.database_url, settings)
 
 
 def create_sqlite_engine():
@@ -397,6 +430,16 @@ def create_sqlite_engine():
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
+    )
+
+
+def create_sqlite_file_engine(path: str | Path):
+    database_path = Path(path)
+    database_path.parent.mkdir(parents=True, exist_ok=True)
+    return create_engine(
+        f"sqlite+pysqlite:///{database_path.as_posix()}",
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True,
     )
 
 

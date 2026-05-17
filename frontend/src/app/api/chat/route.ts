@@ -4,7 +4,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 const SYSTEM_INSTRUCTION =
-  "You are NexusAI Assistant, a helpful chatbot for an ecosystem management platform. " +
+  "You are YokoYoko AI Assistant, a helpful chatbot for an ecosystem management platform. " +
   "You help users with questions about programmes, events, mentorship matching, and ecosystem relationships. " +
   "Keep responses concise and friendly.";
 

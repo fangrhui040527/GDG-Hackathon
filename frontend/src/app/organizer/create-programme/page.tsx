@@ -251,7 +251,7 @@ export default function CreateProgrammePage() {
             {step === 3 && (
               <div className="space-y-5">
                 <p className="text-sm text-slate-500">
-                  Specify how many of each actor type you need. NexusAI AI will use these to generate match results.
+                  Specify how many of each actor type you need. YokoYoko AI will use these to generate match results.
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   {[

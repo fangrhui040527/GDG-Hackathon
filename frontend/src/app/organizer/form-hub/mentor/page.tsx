@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { registerMentor } from "@/lib/api";
+import { registerMentor, uploadMentorCv, uploadMentorVideo } from "@/lib/api";
+
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 export default function MentorRegistrationPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -32,9 +36,13 @@ export default function MentorRegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if ((cvFile && cvFile.size > MAX_UPLOAD_BYTES) || (videoFile && videoFile.size > MAX_UPLOAD_BYTES)) {
+      alert("Optional CV and video uploads must each be under 2MB.");
+      return;
+    }
     setSubmitting(true);
     try {
-      await registerMentor({
+      const mentor = await registerMentor({
         ...form,
         available_hours_per_month: form.available_hours_per_month
           ? parseInt(form.available_hours_per_month)
@@ -43,7 +51,15 @@ export default function MentorRegistrationPage() {
           ? parseInt(form.max_companies_to_mentor)
           : null,
       });
-      alert("Mentor registered successfully!");
+      const mentorId = String(mentor.mentor_id ?? mentor.id ?? "");
+      let mediaWarning = "";
+      try {
+        if (mentorId && cvFile) await uploadMentorCv(mentorId, cvFile);
+        if (mentorId && videoFile) await uploadMentorVideo(mentorId, videoFile);
+      } catch (error) {
+        mediaWarning = ` Optional media upload failed: ${error instanceof Error ? error.message : String(error)}`;
+      }
+      alert(`Mentor registered successfully!${mediaWarning}`);
       router.push("/organizer/form-hub");
     } catch {
       alert("Failed to register mentor. Please try again.");
@@ -128,7 +144,7 @@ export default function MentorRegistrationPage() {
                 <Label htmlFor="preferred_company_stage">Preferred Company Stage</Label>
                 <Input
                   id="preferred_company_stage"
-                  placeholder="e.g. Seed, Series A"
+                  placeholder="e.g. Personal Business, Listed Company"
                   value={form.preferred_company_stage}
                   onChange={(e) => update("preferred_company_stage", e.target.value)}
                 />
@@ -200,6 +216,27 @@ export default function MentorRegistrationPage() {
                 value={form.linkedin_profile_url}
                 onChange={(e) => update("linkedin_profile_url", e.target.value)}
               />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="cv_file">CV / Resume PDF</Label>
+                <Input
+                  id="cv_file"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="video_file">Video Introduction</Label>
+                <Input
+                  id="video_file"
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

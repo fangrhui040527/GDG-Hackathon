@@ -5,7 +5,7 @@ const FORMS = [
     id: "company",
     title: "Company Registration Form",
     description:
-      "Register your startup or company to join the NexusAI ecosystem and be considered for active programmes.",
+      "Register your startup or company to join the YokoYoko AI ecosystem and be considered for active programmes.",
     colorClass: "bg-blue-500",
     iconBgClass: "bg-blue-50",
     url: "/forms/company",

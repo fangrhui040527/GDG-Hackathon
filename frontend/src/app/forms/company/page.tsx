@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useFormStore } from "@/lib/form-store";
-import { registerCompany } from "@/lib/api";
+import { registerCompany, uploadCompanyVideo } from "@/lib/api";
 import { PROGRAMME_CATEGORIES, COMPANY_STAGES, COUNTRIES } from "@/lib/constants";
 
 const SUPPORT_OPTIONS = [
@@ -31,12 +31,15 @@ const EMPTY = {
   industry: "", business_stage: "", support_needed: "",
   availability: "", event_id: "",
 };
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 export default function CompanyRegistrationForm() {
   const { addSubmission } = useFormStore();
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ ...EMPTY });
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState("");
 
   const set = (k: string, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
@@ -54,6 +57,7 @@ export default function CompanyRegistrationForm() {
     if (!form.availability) e.availability = "Availability is required";
     if (form.event_id && isNaN(Number(form.event_id)))
       e.event_id = "Event ID must be a number";
+    if (videoFile && videoFile.size > MAX_UPLOAD_BYTES) e.media = "Video must be under 2MB";
     return e;
   };
 
@@ -62,10 +66,17 @@ export default function CompanyRegistrationForm() {
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
     try {
-      await registerCompany({
+      setUploadError("");
+      const company = await registerCompany({
         ...form,
         event_id: form.event_id ? Number(form.event_id) : null,
       });
+      const companyId = String(company.company_id ?? company.id ?? "");
+      try {
+        if (companyId && videoFile) await uploadCompanyVideo(companyId, videoFile);
+      } catch (error) {
+        setUploadError(`Profile saved, but optional video upload failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
       addSubmission("company", form);
       setSubmitted(true);
     } catch {
@@ -83,7 +94,8 @@ export default function CompanyRegistrationForm() {
         <p className="text-slate-500 mb-6">
           Thank you for registering <strong>{form.company_name}</strong>. We'll be in touch soon.
         </p>
-        <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ ...EMPTY }); }}>
+        {uploadError && <p className="mb-6 text-sm text-red-600">{uploadError}</p>}
+        <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ ...EMPTY }); setVideoFile(null); setUploadError(""); }}>
           Submit Another
         </Button>
       </div>
@@ -98,7 +110,7 @@ export default function CompanyRegistrationForm() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Company Registration</h1>
-          <p className="text-sm text-slate-500">Join the NexusAI ecosystem and be matched to active programmes</p>
+          <p className="text-sm text-slate-500">Join the YokoYoko AI ecosystem and be matched to active programmes</p>
         </div>
       </div>
 
@@ -145,6 +157,16 @@ export default function CompanyRegistrationForm() {
           <Label>Company Description <span className="text-red-500">*</span></Label>
           <Textarea placeholder="What does your company do? What problem are you solving?" rows={4} value={form.company_description} onChange={(e) => set("company_description", e.target.value)} />
           {errors.company_description && <p className="text-xs text-red-500">{errors.company_description}</p>}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+        <h2 className="font-semibold text-slate-900">Supporting Media <span className="text-xs font-normal text-slate-400">(optional)</span></h2>
+        <div className="space-y-1.5">
+          <Label>Company Intro Video</Label>
+          <Input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)} />
+          <p className="text-xs text-slate-400">MP4, WebM, or MOV, under 2MB. Chirp STT and Gemini will clean it.</p>
+          {errors.media && <p className="text-xs text-red-500">{errors.media}</p>}
         </div>
       </section>
 

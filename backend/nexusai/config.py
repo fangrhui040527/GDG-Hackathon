@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     )
 
     database_url: str = Field(alias="DATABASE_URL")
+    app_env: str = Field(default="development", alias="APP_ENV")
+    database_connector_mode: str = Field(default="direct", alias="DATABASE_CONNECTOR_MODE")
     cloud_sql_connection_name: str | None = Field(default=None, alias="CLOUD_SQL_CONNECTION_NAME")
     database_name: str | None = Field(default=None, alias="DATABASE_NAME")
     database_user: str | None = Field(default=None, alias="DATABASE_USER")
@@ -64,6 +66,7 @@ class Settings(BaseSettings):
     bigquery_dataset: str = Field(default="nexusai_dw", alias="BIGQUERY_DATASET")
     bigquery_reranker_model: str = Field(default="nexusai_dw.match_reranker", alias="BIGQUERY_RERANKER_MODEL")
     bigquery_location: str = Field(default="us-central1", alias="BIGQUERY_LOCATION")
+    google_api_timeout_seconds: int = Field(default=10, alias="GOOGLE_API_TIMEOUT_SECONDS")
 
     # Email
     email_provider: str = Field(default="smtp", alias="EMAIL_PROVIDER")
@@ -76,6 +79,14 @@ class Settings(BaseSettings):
     email_outbox_dry_run: bool = Field(default=True, alias="EMAIL_OUTBOX_DRY_RUN")
 
     next_public_api_url: str = Field(default="http://localhost:8000", alias="NEXT_PUBLIC_API_URL")
+    cors_origins: str = Field(
+        default=(
+            "http://localhost:3000,http://127.0.0.1:3000,"
+            "http://localhost:3001,http://127.0.0.1:3001,"
+            "http://localhost:8000,http://127.0.0.1:8000"
+        ),
+        alias="CORS_ORIGINS",
+    )
 
     @field_validator("database_url")
     @classmethod
@@ -83,6 +94,22 @@ class Settings(BaseSettings):
         if not value.startswith(("postgresql://", "postgresql+")):
             raise ValueError("DATABASE_URL must point to Cloud PostgreSQL/PostgreSQL")
         return value
+
+    @field_validator("app_env")
+    @classmethod
+    def normalize_app_env(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"development", "production"}:
+            raise ValueError("APP_ENV must be development or production")
+        return normalized
+
+    @field_validator("database_connector_mode")
+    @classmethod
+    def normalize_database_connector_mode(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"direct", "cloud_sql"}:
+            raise ValueError("DATABASE_CONNECTOR_MODE must be direct or cloud_sql")
+        return normalized
 
     @property
     def enabled_mcp_tools(self) -> Set[str]:

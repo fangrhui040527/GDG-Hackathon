@@ -93,7 +93,7 @@ export default function SignupPage() {
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-600 shadow-lg shadow-violet-500/30">
             <Zap className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">NexusAI</span>
+          <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">YokoYoko AI</span>
         </div>
 
         <div className="mb-8">

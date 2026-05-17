@@ -4,6 +4,48 @@ from typing import Any
 from nexusai.config import Settings
 
 
+def dashboard_metrics_sql(dataset: str) -> str:
+    return f"""
+    SELECT
+      (SELECT COUNT(*) FROM `{dataset}.mentors`) AS mentor_count,
+      (SELECT COUNT(*) FROM `{dataset}.companies`) AS company_count,
+      (SELECT COUNT(*) FROM `{dataset}.events`) AS event_count,
+      (SELECT COUNT(*) FROM `{dataset}.follow_ups`) AS followup_count,
+      (SELECT COUNT(*) FROM `{dataset}.selections`) AS selection_count,
+      (SELECT AVG(sentiment_score) FROM `{dataset}.follow_ups` WHERE sentiment_score IS NOT NULL) AS avg_sentiment
+    """
+
+
+def outcome_trends_sql(dataset: str) -> str:
+    return f"""
+    SELECT
+      FORMAT_DATE('%Y-%m', follow_up_date) AS month,
+      outcome_label,
+      COUNT(*) AS count,
+      AVG(sentiment_score) AS avg_sentiment
+    FROM `{dataset}.follow_ups`
+    WHERE follow_up_date IS NOT NULL
+    GROUP BY month, outcome_label
+    ORDER BY month DESC
+    LIMIT 50
+    """
+
+
+def dashboard_metrics_from_rows(rows: list[dict]) -> dict[str, Any]:
+    if not rows:
+        return {"source": "bigquery", "error": "no data"}
+    r = rows[0]
+    return {
+        "mentors": r.get("mentor_count", 0),
+        "companies": r.get("company_count", 0),
+        "events": r.get("event_count", 0),
+        "follow_ups": r.get("followup_count", 0),
+        "selections": r.get("selection_count", 0),
+        "avg_sentiment": r.get("avg_sentiment"),
+        "source": "bigquery",
+    }
+
+
 class BigQueryService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -20,50 +62,21 @@ class BigQueryService:
         )
 
     def _query(self, sql: str) -> list[dict]:
+        from google.cloud import bigquery
+
         client = self._client()
-        job = client.query(sql)
-        return [dict(row) for row in job.result()]
+        timeout = self.settings.google_api_timeout_seconds
+        job_config = bigquery.QueryJobConfig(use_query_cache=True)
+        job = client.query(sql, job_config=job_config, timeout=timeout)
+        return [dict(row) for row in job.result(timeout=timeout)]
 
     def get_dashboard_metrics(self) -> dict[str, Any]:
         """Real BQ-backed dashboard metrics."""
-        sql = f"""
-        SELECT
-          (SELECT COUNT(*) FROM `{self._dataset}.mentors`) AS mentor_count,
-          (SELECT COUNT(*) FROM `{self._dataset}.companies`) AS company_count,
-          (SELECT COUNT(*) FROM `{self._dataset}.events`) AS event_count,
-          (SELECT COUNT(*) FROM `{self._dataset}.follow_ups`) AS followup_count,
-          (SELECT COUNT(*) FROM `{self._dataset}.selections`) AS selection_count,
-          (SELECT AVG(sentiment_score) FROM `{self._dataset}.follow_ups` WHERE sentiment_score IS NOT NULL) AS avg_sentiment
-        """
-        rows = self._query(sql)
-        if rows:
-            r = rows[0]
-            return {
-                "mentors": r.get("mentor_count", 0),
-                "companies": r.get("company_count", 0),
-                "events": r.get("event_count", 0),
-                "follow_ups": r.get("followup_count", 0),
-                "selections": r.get("selection_count", 0),
-                "avg_sentiment": r.get("avg_sentiment"),
-                "source": "bigquery",
-            }
-        return {"source": "bigquery", "error": "no data"}
+        return dashboard_metrics_from_rows(self._query(dashboard_metrics_sql(self._dataset)))
 
     def get_outcome_trends(self) -> list[dict]:
         """Outcome trends over time."""
-        sql = f"""
-        SELECT
-          FORMAT_DATE('%Y-%m', follow_up_date) AS month,
-          outcome_label,
-          COUNT(*) AS count,
-          AVG(sentiment_score) AS avg_sentiment
-        FROM `{self._dataset}.follow_ups`
-        WHERE follow_up_date IS NOT NULL
-        GROUP BY month, outcome_label
-        ORDER BY month DESC
-        LIMIT 50
-        """
-        return self._query(sql)
+        return self._query(outcome_trends_sql(self._dataset))
 
     def ml_predict_rerank(self, features: list[dict]) -> list[dict]:
         """Use BQML model to rerank match candidates."""

@@ -32,7 +32,7 @@ export function FormStoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("nexusai_form_submissions");
+      const stored = localStorage.getItem("yokoyoko_form_submissions");
       if (stored) setSubmissions(JSON.parse(stored));
     } catch {
       /* ignore */
@@ -43,7 +43,7 @@ export function FormStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem("nexusai_form_submissions", JSON.stringify(submissions));
+      localStorage.setItem("yokoyoko_form_submissions", JSON.stringify(submissions));
     } catch {
       /* ignore */
     }

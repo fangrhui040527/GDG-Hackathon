@@ -1,0 +1,291 @@
+NexusAI Demo Form Data
+======================
+
+Use this file during the demo to copy-paste values quickly.
+
+Company Registration
+--------------------
+Route:
+http://localhost:3001/forms/company
+
+Company Name:
+HelioGrid Analytics
+
+Industry:
+Sustainability
+
+Business Stage:
+Personal Business
+
+Country:
+Malaysia
+
+Company Description:
+HelioGrid Analytics helps commercial buildings reduce energy costs by using AI to forecast solar generation, battery usage, and peak demand charges.
+
+Company Intro Video:
+Optional. Use MP4, WebM, or MOV under 2MB only.
+
+Support Needed:
+Fundraising & Investor Introductions
+
+Availability:
+Flexible
+
+
+Mentor Registration
+-------------------
+Route:
+http://localhost:3001/forms/mentor
+
+Full Name:
+Dr. Nadia Rahman
+
+Email:
+nadia.rahman.demo@example.com
+
+Job Title:
+Partner, Climate Venture Studio
+
+Organisation Name:
+Climate Venture Studio
+
+LinkedIn Profile URL:
+https://linkedin.com/in/nadia-rahman-demo
+
+Country:
+Malaysia
+
+Short Bio:
+Nadia is a climate technology investor and former energy executive who mentors early-stage founders on fundraising, pilot design, and enterprise sales.
+
+CV / Resume PDF:
+Optional. Use PDF under 2MB only.
+
+Video Introduction:
+Optional. Use MP4, WebM, or MOV under 2MB only.
+
+Preferred Company Stage:
+Personal Business
+
+Preferred Industry:
+Sustainability
+
+Type of Support Offered:
+Fundraising & Investor Relations
+
+Available Hours / Month:
+8
+
+Max Companies to Mentor:
+3
+
+Current Availability Status:
+Available - actively accepting mentees
+
+
+Partner Registration
+--------------------
+Route:
+http://localhost:3001/forms/partner
+
+Organisation Name:
+GreenBridge Ventures
+
+Organisation Type:
+Business
+
+Country:
+Singapore
+
+Website:
+https://greenbridge.example.com
+
+Organisation Description:
+GreenBridge Ventures partners with climate and infrastructure startups by opening access to pilots, commercial partners, and regional investors.
+
+Industries of Interest:
+Sustainability
+CleanEnergy
+Finance
+
+Preferred Collaboration Type:
+Funding / Investment
+
+Resources Provided:
+Pilot introductions, investor office hours, ESG reporting support, and access to corporate sustainability teams.
+
+Support Offered:
+GreenBridge will provide investor readiness coaching, pilot partner introductions, and follow-on funding review for selected startups.
+
+Support Capacity:
+Up to 8 startups per cohort.
+
+Requirements / Expectations:
+Startups should have a working MVP and a clear climate impact metric.
+
+Contact Person:
+Melissa Tan
+
+Contact Email:
+melissa.tan.demo@greenbridge.example.com
+
+
+Service Provider Registration
+-----------------------------
+Route:
+http://localhost:3001/forms/service-provider
+
+Organisation Name:
+CloudOps Launchpad
+
+Service Provider Type:
+Cloud & Infrastructure
+
+Country / Region:
+Malaysia
+
+Website URL:
+https://cloudops-launchpad.example.com
+
+Company Description:
+CloudOps Launchpad helps startups design secure cloud architecture, reduce infrastructure cost, and prepare for enterprise-grade deployments.
+
+Services Offered:
+Cloud architecture, security review, cost optimization, deployment automation
+
+Detailed Service Description:
+The team reviews startup cloud environments, creates a pragmatic architecture plan, identifies cost and security issues, and helps implement CI/CD and monitoring.
+
+Target Company Stage:
+Personal Business
+
+Pricing Model:
+Subsidized (Ecosystem Rate)
+
+Current Capacity:
+Available - Actively taking new clients
+
+Contact Person:
+Alex Lim
+
+Contact Email:
+alex.lim.demo@cloudops.example.com
+
+
+Create Programme Wizard
+-----------------------
+Route:
+http://localhost:3001/organizer/create-programme
+
+Step 1 - Basic Info
+Programme Name:
+ASEAN ClimateTech Pilot 2026
+
+Description:
+A pilot-focused programme connecting climate startups with mentors, service providers, and corporate partners across ASEAN.
+
+Category:
+Sustainability
+
+Start Date:
+2026-07-01
+
+End Date:
+2026-09-30
+
+Step 2 - Target Criteria
+Target Industry:
+Clean Energy & Sustainability
+
+Target Country:
+Malaysia
+
+Target Company Stage:
+Personal Business
+
+Step 3 - Resource Requirements
+Required Companies:
+8
+
+Required Mentors:
+4
+
+Required Partners:
+3
+
+Required Service Providers:
+2
+
+Step 4 - Eligibility
+Eligibility Criteria:
+Startups must have a working MVP, a measurable sustainability outcome, and a team available for pilots in Malaysia or ASEAN.
+
+Step 5 - Review
+Click:
+Run AI Matching
+
+
+Seeded Programme Records
+------------------------
+These already exist in local dev data:
+
+1. Global FinTech Accelerator 2026
+Status: published
+Target: Financial Technology, Malaysia, Listed Company
+
+2. HealthTech Innovation Lab
+Status: submitted
+Target: Healthcare & Life Sciences, Singapore, Personal Business
+
+3. GreenTech Sustainability Challenge
+Status: submitted
+Target: Clean Energy & Sustainability, Indonesia, Personal Business
+
+4. EdTech Mentorship Network
+Status: draft
+Target: Education Technology, Philippines, Personal Business
+
+5. Smart City IoT Partnership
+Status: approved
+Target: IoT & Smart Infrastructure, Thailand, International Business
+
+
+Seeded Mentor Examples
+----------------------
+Dr. Ahmad Farouk
+Ms. Priya Nair
+Dr. Sarah Lim
+Prof. Wijaya Kusuma
+Mr. Lee Wei Liang
+Prof. Maria Santos
+Tan Sri Azman Mokhtar
+Dr. Supatra Charoenpong
+Mr. Rajesh Patel
+Dr. Nguyen Thanh
+
+
+Seeded Company Examples
+-----------------------
+Axiata Digital
+Grab Financial Group
+Biofourmis
+Naluri Hidup
+SolarAI Labs
+SmartTraffic.io
+Ruangguru
+EcoCharge Systems
+TouchNGo eWallet
+GoTo Financial
+
+
+Admin Dashboard Demo Points
+---------------------------
+Route:
+http://localhost:3001/admin/dashboard
+
+Say:
+- The dashboard shows ecosystem records and metrics.
+- Admin can add records, run matching, approve selections, inspect notifications, and use media extraction.
+- The media extraction section supports mentor CV, mentor video, and company video processing.
+

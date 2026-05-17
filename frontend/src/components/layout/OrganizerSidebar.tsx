@@ -66,7 +66,7 @@ export default function OrganizerSidebar() {
         <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", logoBox)}>
           <Zap className={cn("h-5 w-5", logoIconColor)} />
         </div>
-        <span className={cn(fadeIn, labelColor, "font-bold")}>NexusAI</span>
+        <span className={cn(fadeIn, labelColor, "font-bold")}>YokoYoko AI</span>
       </div>
 
       {/* Theme toggles */}

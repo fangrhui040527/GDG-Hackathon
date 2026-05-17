@@ -1,0 +1,121 @@
+NexusAI 2:50 Demo Walkthrough
+=============================
+
+Use this for a tight 2 minute 50 second presentation.
+
+Local URLs
+----------
+Frontend: http://localhost:3001
+Backend docs: http://127.0.0.1:8001/docs
+Company form: http://localhost:3001/forms/company
+Mentor form: http://localhost:3001/forms/mentor
+Partner form: http://localhost:3001/forms/partner
+Service provider form: http://localhost:3001/forms/service-provider
+Create programme: http://localhost:3001/organizer/create-programme
+Programme shortlist: http://localhost:3001/organizer/programmes/1/shortlist
+Admin dashboard: http://localhost:3001/admin/dashboard
+
+Current local data
+------------------
+Mentors: 10
+Companies: 12
+Programmes: 5
+Partners: 7
+Service providers: 6
+Shortlist items: 11
+
+Business stage options
+----------------------
+The app now uses:
+- Personal Business
+- Listed Company
+- International Business
+- Any
+
+2:50 timeline
+-------------
+
+0:00-0:15 - Opening
+Show: http://localhost:3001
+Say:
+"This is NexusAI, an ecosystem matching platform for accelerator organisers. It captures companies, mentors, partners, and service providers, then turns that data into programme matching and shortlists."
+
+0:15-0:55 - Intake forms
+Show:
+- /forms/company
+- /forms/mentor
+- /forms/partner
+- /forms/service-provider
+
+Say:
+"The system has four intake forms. Company forms capture industry, country, business stage, support needs, and availability. Mentor forms also support CV PDF and intro video uploads under 2MB. Company video uploads are supported too."
+
+Point out:
+"The new business stage model is Personal Business, Listed Company, and International Business."
+
+If doing live input:
+Use Demo Set 1 from DEMO_DATA_TWO_SETS.txt and submit only the company form.
+
+0:55-1:30 - AI ingestion capability
+Show:
+- /forms/mentor supporting documents section
+- /admin/dashboard media extraction area
+
+Say:
+"For unstructured media, the backend sends mentor CV PDFs to Document AI, sends videos to Chirp speech-to-text, then uses Gemini to clean and extract profile fields. Raw files are not stored; only cleaned text and structured profile data go into the database."
+
+1:30-2:05 - Programme creation and matching
+Show:
+- /organizer/create-programme
+- /organizer/programmes/1/ai-matching
+
+Say:
+"Organisers create programmes with target criteria: industry, country, business stage, and required actor counts. NexusAI uses those criteria to score mentors, companies, partners, and service providers."
+
+Use:
+Demo Set 1 programme data if creating live.
+
+2:05-2:30 - Shortlist and workflow
+Show:
+- /organizer/programmes/1/shortlist
+
+Say:
+"The shortlist is persistent. It lets the organiser keep the strongest matches for review instead of losing them as temporary UI state."
+
+Mention examples:
+Dr. Ahmad Farouk, Ms. Priya Nair, Axiata Digital, Grab Financial Group, Khazanah Nasional, Bank Negara Malaysia.
+
+2:30-2:50 - Admin and close
+Show:
+- /admin/dashboard
+
+Say:
+"The admin dashboard gives central oversight: metrics, actor records, submissions, matching review, relationships, reports, and media extraction. The core capability is converting ecosystem intake and unstructured files into usable matching data."
+
+Final line:
+"In under three minutes, NexusAI shows intake, AI profile enrichment, programme setup, matching, shortlisting, and admin oversight in one workflow."
+
+Fast click path
+---------------
+1. http://localhost:3001/forms/company
+2. http://localhost:3001/forms/mentor
+3. http://localhost:3001/organizer/create-programme
+4. http://localhost:3001/organizer/programmes/1/ai-matching
+5. http://localhost:3001/organizer/programmes/1/shortlist
+6. http://localhost:3001/admin/dashboard
+
+Backup checks
+-------------
+Backend readiness:
+http://127.0.0.1:8001/ready
+
+Dashboard metrics:
+http://127.0.0.1:8001/analytics/dashboard
+
+Avoid during the 2:50 demo
+--------------------------
+- Do not debug Google OAuth; it is not configured for local dev.
+- Do not use backend port 8000.
+- Do not upload files over 2MB.
+- Do not type every form live; use the prepared data sets.
+

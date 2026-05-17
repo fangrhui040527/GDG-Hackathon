@@ -81,6 +81,85 @@ def test_api_demo_flow_creates_profiles_matches_followup_and_metrics():
     }
 
 
+def test_relationship_graph_is_derived_from_programme_shortlist():
+    engine = create_sqlite_engine()
+    Base.metadata.create_all(engine)
+    app = create_app(
+        session_factory=create_session_factory(engine),
+        ai_service=FakeAIService(),
+        mcp_client=FakeMCPClient(),
+    )
+    client = TestClient(app)
+
+    programme = client.post("/programmes", json={"name": "Fintech Sprint", "category": "Accelerator"}).json()
+    programme_id = programme["programme_id"]
+
+    client.post(
+        f"/programmes/{programme_id}/shortlist",
+        json={
+            "match_result_id": "mentor-1",
+            "actor_id": "1",
+            "actor_type": "mentor",
+            "actor_name": "Asha Tan",
+            "match_score": 91,
+        },
+    )
+    client.post(
+        f"/programmes/{programme_id}/shortlist",
+        json={
+            "match_result_id": "company-2",
+            "actor_id": "2",
+            "actor_type": "company",
+            "actor_name": "PayBridge",
+            "match_score": 72,
+        },
+    )
+
+    response = client.get("/relationships/graph")
+
+    assert response.status_code == 200
+    graph = response.json()
+    assert graph["nodes"] == [
+        {
+            "id": f"prog-{programme_id}",
+            "label": "Fintech Sprint",
+            "category": "programme",
+            "type": "institution",
+            "sector": "Accelerator",
+        },
+        {
+            "id": "mentor-1",
+            "label": "Asha Tan",
+            "category": "mentor",
+            "type": "individual",
+            "sector": "",
+        },
+        {
+            "id": "company-2",
+            "label": "PayBridge",
+            "category": "company",
+            "type": "institution",
+            "sector": "",
+        },
+    ]
+    assert graph["edges"] == [
+        {
+            "id": f"edge-prog-{programme_id}-mentor-1",
+            "source": f"prog-{programme_id}",
+            "target": "mentor-1",
+            "score": 91.0,
+            "strength": "strong",
+        },
+        {
+            "id": f"edge-prog-{programme_id}-company-2",
+            "source": f"prog-{programme_id}",
+            "target": "company-2",
+            "score": 72.0,
+            "strength": "weak",
+        },
+    ]
+
+
 def test_mentor_cv_upload_uses_document_ai_mcp_and_vertex_cleanup():
     engine = create_sqlite_engine()
     Base.metadata.create_all(engine)

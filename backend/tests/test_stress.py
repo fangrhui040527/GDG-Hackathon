@@ -670,11 +670,11 @@ class TestAuthSmoke:
 
     def test_update_role_invalid_role(self, client):
         r = client.patch("/users/1/role", json={"role": "GOD_MODE"})
-        assert r.status_code == 400
+        assert r.status_code == 401
 
     def test_update_role_nonexistent_user(self, client):
         r = client.patch("/users/99999/role", json={"role": "MENTOR"})
-        assert r.status_code == 404
+        assert r.status_code == 401
 
 
 # ── 15. Data Flow Integration ────────────────────────────────

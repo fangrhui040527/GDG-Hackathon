@@ -1,0 +1,151 @@
+NexusAI 3-Minute Demo Walkthrough
+=================================
+
+Local app URLs
+--------------
+Frontend: http://localhost:3001
+Backend docs: http://127.0.0.1:8001/docs
+Company form: http://localhost:3001/forms/company
+Mentor form: http://localhost:3001/forms/mentor
+Partner form: http://localhost:3001/forms/partner
+Service provider form: http://localhost:3001/forms/service-provider
+Organizer dashboard: http://localhost:3001/organizer/dashboard
+Organizer programmes: http://localhost:3001/organizer/my-programmes
+Create programme: http://localhost:3001/organizer/create-programme
+Admin dashboard: http://localhost:3001/admin/dashboard
+
+Current seeded demo data
+------------------------
+Mentors: 10
+Companies: 12
+Programmes: 5
+Partners: 7
+Service providers: 6
+Shortlist items: 11
+
+Programme statuses:
+- 1 published
+- 1 approved
+- 2 submitted
+- 1 draft
+
+3-minute talk track
+-------------------
+
+0:00-0:20 - Opening
+Say:
+"This is NexusAI, an ecosystem matching platform for accelerator organisers. It helps collect actor profiles, ingest media through AI, create programmes, match companies with mentors and partners, and manage shortlists for review."
+
+Show:
+- http://localhost:3001
+- Mention the seeded local dataset: 10 mentors, 12 companies, 5 programmes.
+
+0:20-0:55 - Public registration forms
+Show these quickly:
+- /forms/company
+- /forms/mentor
+- /forms/partner
+- /forms/service-provider
+
+Say:
+"The system has intake forms for companies, mentors, partners, and service providers. Each form captures structured information needed for ecosystem matching: industry, stage, support needs, availability, country, and contact details."
+
+Important capability:
+"Mentors can upload a CV PDF under 2MB and an intro video under 2MB. Companies can upload an intro video under 2MB. The backend sends PDFs through Document AI, videos through Chirp STT, then Gemini cleans and extracts profile information. Only cleaned text is stored."
+
+If demonstrating live:
+- Fill only the company form because it is the fastest.
+- Use sample data from DEMO_FORM_DATA.txt.
+- Submit and show success.
+
+0:55-1:35 - Organizer programme workflow
+Show:
+- /organizer/dashboard
+- /organizer/my-programmes
+- /organizer/create-programme
+
+Say:
+"An organiser can create a programme with target criteria: industry, country, stage, and required numbers of companies, mentors, partners, and service providers. These requirements become the matching contract."
+
+Demo action:
+- Open /organizer/create-programme.
+- Mention the 5-step wizard:
+  1. Basic Info
+  2. Target Criteria
+  3. Resource Requirements
+  4. Eligibility
+  5. Review
+
+Use sample:
+- Programme name: ASEAN ClimateTech Pilot 2026
+- Category: Sustainability
+- Target country: Malaysia
+- Target stage: Personal Business
+
+1:35-2:10 - AI matching and shortlist
+Show:
+- /organizer/programmes/1/ai-matching
+- /organizer/programmes/1/shortlist
+
+Say:
+"The matching page scores actors against programme criteria. The shortlist page is where the organiser keeps the best candidates. Shortlist entries persist in the backend, so this is not just temporary UI state."
+
+Seeded shortlist examples:
+- Dr. Ahmad Farouk
+- Ms. Priya Nair
+- Mr. Rajesh Patel
+- Axiata Digital
+- Grab Financial Group
+- Khazanah Nasional
+- Bank Negara Malaysia
+- AWS Startup Loft
+
+2:10-2:40 - Admin capabilities
+Show:
+- /admin/dashboard
+- /admin/manage-actors
+- /admin/submissions
+- /admin/relationships
+- /admin/reports
+
+Say:
+"The admin side gives a central operating view. Admins can inspect metrics, actor records, submissions, matching review, published programmes, relationships, and reports."
+
+Mention:
+"The admin dashboard also has media extraction controls for mentor CVs, mentor videos, and company videos. That means staff can enrich profiles even after initial registration."
+
+2:40-3:00 - Architecture and close
+Say:
+"The stack is Next.js and React on the frontend, FastAPI and SQLAlchemy on the backend, with SQLite for local demo and PostgreSQL or Cloud SQL for production. AI ingestion uses Document AI, Chirp STT, and Gemini through the MCP architecture. The result is a working workflow from intake, AI profile cleanup, matching, shortlisting, and admin oversight."
+
+Closing line:
+"For this demo, the value is not just form capture. It is turning unstructured mentor/company material into structured ecosystem data that can drive programme matching."
+
+Fast demo route order
+---------------------
+Use this exact route sequence if time is tight:
+1. http://localhost:3001/forms/company
+2. http://localhost:3001/forms/mentor
+3. http://localhost:3001/organizer/my-programmes
+4. http://localhost:3001/organizer/programmes/1/ai-matching
+5. http://localhost:3001/organizer/programmes/1/shortlist
+6. http://localhost:3001/admin/dashboard
+
+What to avoid in a 3-minute demo
+--------------------------------
+- Do not spend time typing every form from scratch.
+- Do not upload large media files.
+- Do not debug OAuth; Google OAuth is not configured in local dev.
+- Do not use backend port 8000. This demo is configured for backend port 8001.
+- Do not discuss implementation details unless asked.
+
+Backup proof points
+-------------------
+Backend readiness:
+GET http://127.0.0.1:8001/ready
+Expected: {"status":"ready"}
+
+Dashboard metrics:
+GET http://127.0.0.1:8001/analytics/dashboard
+Expected:
+{"mentors":10,"companies":12,"events":0,"follow_ups":0,"selections":0}

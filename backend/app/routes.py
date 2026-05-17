@@ -42,67 +42,28 @@ except Exception:
 
 router = APIRouter()
 
+
+# ── Auth (demo) ──────────────────────────────────────────────────────────────
+
+@router.post("/auth/demo-login")
+def demo_login(payload: dict):
+    email = payload.get("email", "")
+    role = payload.get("role", "organizer")
+    return {
+        "id": 1 if role == "admin" else 2,
+        "email": email,
+        "name": "Admin User" if role == "admin" else "Organizer User",
+        "role": role,
+    }
+
+
 # ── In-memory stores ──────────────────────────────────────────────────────────
 
-_programmes: dict[int, dict] = {
-    1: {
-        "programme_id": 1,
-        "name": "Global FinTech",
-        "description": "achieve new technology",
-        "category": "Fintech",
-        "status": "submitted",
-        "start_date": "2026-05-19",
-        "end_date": "2026-05-22",
-        "cover_image": None,
-        "target_industry": "Financial Technology",
-        "target_country": "Malaysia",
-        "target_company_stage": "Growth",
-        "required_mentors": 4,
-        "required_companies": 10,
-        "required_partners": 3,
-        "required_service_providers": 2,
-        "eligibility_criteria": "anyone can join",
-        "organiser_id": None,
-        "organiser_name": "Organiser",
-        "submitted_at": "2026-05-16T18:24:14.490174+00:00",
-        "published_at": None,
-        "created_at": "2026-05-16T18:01:36.258594+00:00",
-        "updated_at": "2026-05-16T18:24:14.490174+00:00",
-    },
-    2: {
-        "programme_id": 2,
-        "name": "HealthTech Accelerator",
-        "description": "Accelerating digital health innovation across Southeast Asia",
-        "category": "Healthcare",
-        "status": "draft",
-        "start_date": "2026-06-01",
-        "end_date": "2026-08-31",
-        "cover_image": None,
-        "target_industry": "Healthcare",
-        "target_country": "Singapore",
-        "target_company_stage": "Seed",
-        "required_mentors": 6,
-        "required_companies": 8,
-        "required_partners": 4,
-        "required_service_providers": 3,
-        "eligibility_criteria": "Healthcare startups only",
-        "organiser_id": None,
-        "organiser_name": "Organiser",
-        "submitted_at": None,
-        "published_at": None,
-        "created_at": "2026-05-10T09:00:00.000000+00:00",
-        "updated_at": "2026-05-10T09:00:00.000000+00:00",
-    },
-}
-_programme_counter = 2
+_programmes: dict[int, dict] = {}
+_programme_counter = 0
 
-_actors: list[dict] = [
-    {"id": 1, "name": "Axiata Digital", "type": "company", "category": "Fintech", "country": "Malaysia", "status": "active", "registeredAt": "2025-01-10"},
-    {"id": 2, "name": "Dr. Sarah Lim", "type": "mentor", "category": "Healthcare", "country": "Singapore", "status": "active", "registeredAt": "2025-02-05"},
-    {"id": 3, "name": "Khazanah Nasional", "type": "partner", "category": "Investment", "country": "Malaysia", "status": "pending", "registeredAt": "2025-03-15"},
-    {"id": 4, "name": "AWS Startup Loft", "type": "service_provider", "category": "Cloud", "country": "Malaysia", "status": "active", "registeredAt": "2025-04-01"},
-]
-_actor_counter = len(_actors)
+_actors: list[dict] = []
+_actor_counter = 0
 
 _submissions: dict[str, list[dict]] = {"mentors": [], "companies": [], "partners": [], "service_providers": []}
 
@@ -221,29 +182,45 @@ def request_changes(programme_id: int):
 
 # ── AI Matching ───────────────────────────────────────────────────────────────
 
-_SAMPLE_NAMES = ["Axiata Digital", "Grab Ventures", "Khazanah Nasional", "MDEC", "Cradle Fund",
-                 "Dr. Ahmad Farouk", "Ms. Priya Nair", "Mr. Lee Wei Liang", "AWS Startup Loft", "KPMG Advisory"]
-_SAMPLE_FACTORS = ["Industry alignment", "Stage fit", "Geographic match", "Expertise match", "Capacity available"]
+_SAMPLE_NAMES = {
+    "mentors": ["Dr. Ahmad Farouk", "Ms. Priya Nair", "Mr. Rajesh Patel", "Tan Sri Azman Mokhtar", "Mr. Lee Wei Liang", "Prof. Wijaya Kusuma", "Dr. Supatra Charoenpong", "Prof. Maria Santos"],
+    "companies": ["Axiata Digital", "Grab Financial Group", "TouchNGo eWallet", "GoTo Financial", "Biofourmis", "Naluri Hidup", "SolarAI Labs", "SmartTraffic.io", "Ruangguru", "EcoCharge Systems"],
+    "partners": ["Khazanah Nasional", "Temasek Holdings", "MDEC", "Cradle Fund", "Bank Negara Malaysia", "GreenFinance Asia", "Bangkok Metropolitan Authority"],
+    "service_providers": ["AWS Startup Loft", "KPMG Advisory", "Baker McKenzie", "Google Cloud for Startups", "PwC Digital", "Stripe Atlas"],
+}
+_SAMPLE_FACTORS = ["Industry alignment", "Stage fit", "Geographic match", "Expertise overlap", "Capacity available", "Track record", "Language compatibility", "Network synergy"]
+_RATIONALES = {
+    "mentors": "Has deep domain expertise and a strong track record mentoring startups at this stage.",
+    "companies": "Strong product-market fit alignment with programme goals and proven traction in target market.",
+    "partners": "Established presence in target geography with relevant investment thesis and ecosystem reach.",
+    "service_providers": "Offers specialised capabilities critical to programme participants' growth needs.",
+}
 
 @router.get("/programmes/{programme_id}/match", response_model=MatchGroup)
 def get_programme_matches(programme_id: int):
     if programme_id not in _programmes:
         raise HTTPException(status_code=404, detail="Programme not found")
 
-    def _recs(n: int) -> list[MatchRecommendation]:
-        names = random.sample(_SAMPLE_NAMES, min(n, len(_SAMPLE_NAMES)))
+    def _recs(category: str, n: int) -> list[MatchRecommendation]:
+        names = random.sample(_SAMPLE_NAMES[category], min(n, len(_SAMPLE_NAMES[category])))
         return [
             MatchRecommendation(
                 entity_id=str(i + 1),
                 entity_name=name,
-                score=round(random.uniform(0.70, 0.99), 2),
-                fit_factors=random.sample(_SAMPLE_FACTORS, k=random.randint(2, 4)),
-                rationale=f"{name} aligns well with the programme's target criteria.",
+                score=round(random.uniform(0.75, 0.98), 2),
+                fit_factors=random.sample(_SAMPLE_FACTORS, k=random.randint(3, 5)),
+                rationale=f"{name}: {_RATIONALES[category]}",
             )
             for i, name in enumerate(names)
         ]
 
-    return MatchGroup(mentors=_recs(3), companies=_recs(3), partners=_recs(2), service_providers=_recs(2))
+    p = _programmes[programme_id]
+    return MatchGroup(
+        mentors=_recs("mentors", p.get("required_mentors", 3)),
+        companies=_recs("companies", p.get("required_companies", 5)),
+        partners=_recs("partners", p.get("required_partners", 3)),
+        service_providers=_recs("service_providers", p.get("required_service_providers", 2)),
+    )
 
 
 # ── Shortlist ─────────────────────────────────────────────────────────────────
@@ -309,12 +286,14 @@ def register_mentor(body: MentorCreate):
 def register_company(body: CompanyCreate):
     global _actor_counter
     _actor_counter += 1
+    stage = body.stage or body.business_stage or ""
+    country = body.country or "Malaysia"
     entry = {"id": _actor_counter, "name": body.company_name, "type": "company",
-             "category": body.industry, "country": "Malaysia", "status": "pending",
+             "category": body.industry or "General", "country": country, "status": "pending",
              "registeredAt": _now()[:10]}
     _actors.append(entry)
     _submissions["companies"].append(body.model_dump())
-    return {"id": _actor_counter, "message": "Company registered successfully"}
+    return {"id": _actor_counter, "company_id": _actor_counter, "message": "Company registered successfully"}
 
 
 @router.post("/profiles/partners", status_code=201)
@@ -339,6 +318,55 @@ def register_service_provider(body: ServiceProviderCreate):
     _actors.append(entry)
     _submissions["service_providers"].append(body.model_dump())
     return {"id": _actor_counter, "message": "Service provider registered successfully"}
+
+
+# ── Relationships (derived from shortlists + programmes) ─────────────────────
+
+@router.get("/relationships/graph")
+def get_relationship_graph():
+    nodes = []
+    edges = []
+    seen_nodes: set[str] = set()
+
+    for pid_str, items in _shortlists.items():
+        pid = int(pid_str)
+        prog = _programmes.get(pid)
+        if not prog:
+            continue
+
+        prog_node_id = f"prog-{pid}"
+        if prog_node_id not in seen_nodes:
+            seen_nodes.add(prog_node_id)
+            nodes.append({
+                "id": prog_node_id,
+                "label": prog["name"],
+                "category": "programme",
+                "type": "institution",
+                "sector": prog.get("category", ""),
+            })
+
+        for item in items:
+            actor_id = f"{item['actor_type']}-{item['actor_id']}"
+            if actor_id not in seen_nodes:
+                seen_nodes.add(actor_id)
+                node_type = "individual" if item["actor_type"] == "mentor" else "institution"
+                nodes.append({
+                    "id": actor_id,
+                    "label": item["actor_name"],
+                    "category": item["actor_type"],
+                    "type": node_type,
+                    "sector": "",
+                })
+
+            edges.append({
+                "id": f"edge-{prog_node_id}-{actor_id}",
+                "source": prog_node_id,
+                "target": actor_id,
+                "score": item["match_score"],
+                "strength": "strong" if item["match_score"] >= 90 else "weak",
+            })
+
+    return {"nodes": nodes, "edges": edges}
 
 
 # ── Analytics / Dashboard ─────────────────────────────────────────────────────

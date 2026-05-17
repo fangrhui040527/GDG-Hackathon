@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useFormStore } from "@/lib/form-store";
-import { registerMentor } from "@/lib/api";
+import { registerMentor, uploadMentorCv, uploadMentorVideo } from "@/lib/api";
 import { COUNTRIES, COMPANY_STAGES } from "@/lib/constants";
 
 const INDUSTRIES = [
@@ -34,17 +34,21 @@ const AVAILABILITY_STATUSES = [
 
 const EMPTY = {
   full_name: "", email: "", job_title: "", organization_name: "",
-  linkedin_profile_url: "", short_bio: "", cv: "", video: "",
+  linkedin_profile_url: "", short_bio: "",
   preferred_company_stage: "", preferred_industry: "", type_of_support_offered: "",
   available_hours_per_month: "", max_companies_to_mentor: "",
   current_availability_status: "", country: "",
 };
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 export default function MentorRegistrationForm() {
   const { addSubmission } = useFormStore();
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ ...EMPTY });
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState("");
 
   const set = (k: string, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
@@ -72,6 +76,8 @@ export default function MentorRegistrationForm() {
       e.max_companies_to_mentor = "Must be a positive number";
     if (!form.current_availability_status) e.current_availability_status = "Availability status is required";
     if (!form.country) e.country = "Country is required";
+    if (cvFile && cvFile.size > MAX_UPLOAD_BYTES) e.media = "CV must be under 2MB";
+    if (videoFile && videoFile.size > MAX_UPLOAD_BYTES) e.media = "Video must be under 2MB";
     return e;
   };
 
@@ -80,7 +86,8 @@ export default function MentorRegistrationForm() {
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
     try {
-      await registerMentor({
+      setUploadError("");
+      const mentor = await registerMentor({
         full_name: form.full_name,
         email: form.email,
         job_title: form.job_title,
@@ -95,6 +102,13 @@ export default function MentorRegistrationForm() {
         current_availability_status: form.current_availability_status || "Available",
         country: form.country,
       });
+      const mentorId = String(mentor.mentor_id ?? mentor.id ?? "");
+      try {
+        if (mentorId && cvFile) await uploadMentorCv(mentorId, cvFile);
+        if (mentorId && videoFile) await uploadMentorVideo(mentorId, videoFile);
+      } catch (error) {
+        setUploadError(`Profile saved, but optional media upload failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
       addSubmission("mentor", form);
       setSubmitted(true);
     } catch {
@@ -112,7 +126,8 @@ export default function MentorRegistrationForm() {
         <p className="text-slate-500 mb-6">
           Thank you, <strong>{form.full_name}</strong>. Our team will review your mentor application.
         </p>
-        <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ ...EMPTY }); }}>
+        {uploadError && <p className="mb-6 text-sm text-red-600">{uploadError}</p>}
+        <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ ...EMPTY }); setCvFile(null); setVideoFile(null); setUploadError(""); }}>
           Submit Another
         </Button>
       </div>
@@ -127,7 +142,7 @@ export default function MentorRegistrationForm() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Mentor Registration</h1>
-          <p className="text-sm text-slate-500">Support high-growth startups in NexusAI ecosystem programmes</p>
+          <p className="text-sm text-slate-500">Support high-growth startups in YokoYoko AI ecosystem programmes</p>
         </div>
       </div>
 
@@ -190,16 +205,17 @@ export default function MentorRegistrationForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>CV / Resume URL</Label>
-            <Input placeholder="https://drive.google.com/..." value={form.cv} onChange={(e) => set("cv", e.target.value)} />
-            <p className="text-xs text-slate-400">Link to your CV on Google Drive, Dropbox, or similar</p>
+            <Label>CV / Resume PDF</Label>
+            <Input type="file" accept="application/pdf" onChange={(e) => setCvFile(e.target.files?.[0] ?? null)} />
+            <p className="text-xs text-slate-400">PDF only, under 2MB. Document AI and Gemini will clean it.</p>
           </div>
           <div className="space-y-1.5">
-            <Label>Video Introduction URL</Label>
-            <Input placeholder="https://youtube.com/..." value={form.video} onChange={(e) => set("video", e.target.value)} />
-            <p className="text-xs text-slate-400">Short intro video (YouTube, Loom, etc.) — highly recommended</p>
+            <Label>Video Introduction</Label>
+            <Input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)} />
+            <p className="text-xs text-slate-400">MP4, WebM, or MOV, under 2MB. Chirp STT and Gemini will clean it.</p>
           </div>
         </div>
+        {errors.media && <p className="text-xs text-red-500">{errors.media}</p>}
       </section>
 
       {/* Mentoring Preferences */}

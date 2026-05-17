@@ -13,7 +13,9 @@ import {
   Notification,
   Selection,
   streamAgentChat,
-  uploadMentorCv
+  uploadCompanyVideo,
+  uploadMentorCv,
+  uploadMentorVideo
 } from "@/lib/api";
 
 const emptyMetrics: DashboardMetrics = {
@@ -26,6 +28,8 @@ const emptyMetrics: DashboardMetrics = {
   approved_selections: 0,
   average_outcome_score: 0,
 };
+
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 function toList(value: string): string[] {
   return value
@@ -175,8 +179,44 @@ export function AdminDashboard() {
       setStatus("Choose a mentor and CV file");
       return;
     }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setStatus("Mentor CV must be under 2MB");
+      return;
+    }
     const result = await uploadMentorCv(selectedMentorId, file);
     setStatus(`Document AI extracted profile for ${String(result.extracted_profile.full_name ?? "mentor")}`);
+  }
+
+  async function uploadMentorVideoForm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const file = form.get("mentor_video");
+    if (!selectedMentorId || !(file instanceof File)) {
+      setStatus("Choose a mentor and video file");
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setStatus("Mentor video must be under 2MB");
+      return;
+    }
+    const result = await uploadMentorVideo(selectedMentorId, file);
+    setStatus(`Chirp STT processed mentor video for ${String(result.extracted_profile.full_name ?? "mentor")}`);
+  }
+
+  async function uploadCompanyVideoForm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const file = form.get("company_video");
+    if (!selectedCompanyId || !(file instanceof File)) {
+      setStatus("Choose a company and video file");
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setStatus("Company video must be under 2MB");
+      return;
+    }
+    const result = await uploadCompanyVideo(selectedCompanyId, file);
+    setStatus(`Chirp STT processed company video for ${String(result.extracted_profile.company_name ?? "company")}`);
   }
 
   async function recordFollowup() {
@@ -219,7 +259,7 @@ export function AdminDashboard() {
     <main className="shell">
       <aside className="sidebar">
         <div>
-          <p className="eyebrow">NexusAI</p>
+          <p className="eyebrow">YokoYoko AI</p>
           <h1>Ecosystem Matching</h1>
         </div>
         <nav>
@@ -304,21 +344,49 @@ export function AdminDashboard() {
 
         <section id="document-ai" className="band">
           <div className="section-heading">
-            <p className="eyebrow">Document AI MCP</p>
-            <h2>Mentor CV extraction</h2>
+            <p className="eyebrow">Document AI + Chirp STT MCP</p>
+            <h2>Media extraction</h2>
           </div>
-          <form onSubmit={uploadCv} className="toolbar">
-            <select value={selectedMentorId} onChange={(event) => setSelectedMentorId(event.target.value)}>
-              <option value="">Choose mentor</option>
-              {mentors.map((mentor) => (
-                <option key={mentor.id} value={mentor.id}>
-                  {mentor.full_name}
-                </option>
-              ))}
-            </select>
-            <input name="cv" type="file" accept=".pdf,.txt,.doc,.docx" />
-            <button type="submit">Extract CV</button>
-          </form>
+          <div className="grid two">
+            <form onSubmit={uploadCv} className="toolbar">
+              <select value={selectedMentorId} onChange={(event) => setSelectedMentorId(event.target.value)}>
+                <option value="">Choose mentor</option>
+                {mentors.map((mentor) => (
+                  <option key={mentor.id} value={mentor.id}>
+                    {mentor.full_name}
+                  </option>
+                ))}
+              </select>
+              <input name="cv" type="file" accept="application/pdf" />
+              <button type="submit">Extract CV</button>
+            </form>
+
+            <form onSubmit={uploadMentorVideoForm} className="toolbar">
+              <select value={selectedMentorId} onChange={(event) => setSelectedMentorId(event.target.value)}>
+                <option value="">Choose mentor</option>
+                {mentors.map((mentor) => (
+                  <option key={mentor.id} value={mentor.id}>
+                    {mentor.full_name}
+                  </option>
+                ))}
+              </select>
+              <input name="mentor_video" type="file" accept="video/mp4,video/webm,video/quicktime" />
+              <button type="submit">Extract mentor video</button>
+            </form>
+
+            <form onSubmit={uploadCompanyVideoForm} className="toolbar">
+              <select value={selectedCompanyId} onChange={(event) => setSelectedCompanyId(event.target.value)}>
+                <option value="">Choose company</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.company_name}
+                  </option>
+                ))}
+              </select>
+              <input name="company_video" type="file" accept="video/mp4,video/webm,video/quicktime" />
+              <button type="submit">Extract company video</button>
+            </form>
+          </div>
         </section>
 
         <section id="matching" className="band">
@@ -386,7 +454,7 @@ export function AdminDashboard() {
 
         <section id="copilot" className="band">
           <div className="section-heading">
-            <p className="eyebrow">NexusAI Copilot</p>
+            <p className="eyebrow">YokoYoko AI Copilot</p>
             <h2>Agent chat</h2>
           </div>
           <div className="chat-container">
@@ -396,7 +464,7 @@ export function AdminDashboard() {
               )}
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`chat-msg ${msg.role}`}>
-                  <strong>{msg.role === "user" ? "You" : "NexusAI"}:</strong>
+                  <strong>{msg.role === "user" ? "You" : "YokoYoko AI"}:</strong>
                   <div dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, "<br/>") }} />
                 </div>
               ))}

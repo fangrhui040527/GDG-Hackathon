@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { ProgrammeStoreProvider } from "@/lib/store";
 import { FormStoreProvider } from "@/lib/form-store";
 import ChatBubble from "@/components/chat-bubble";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
-
 export const metadata: Metadata = {
-  title: "NexusAI — Ecosystem Management Platform",
+  title: "YokoYoko AI — Ecosystem Management Platform",
   description:
     "AI-enabled ecosystem linkage management platform for managing programmes, events, and ecosystem relationships.",
 };
@@ -23,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <ProgrammeStoreProvider>
           <FormStoreProvider>
             {children}

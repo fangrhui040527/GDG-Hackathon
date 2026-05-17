@@ -1,4 +1,4 @@
-export const APP_NAME = "NexusAI";
+export const APP_NAME = "YokoYoko AI";
 export const APP_TAGLINE = "Ecosystem Management Platform";
 
 export const PROGRAMME_CATEGORIES = [
@@ -15,11 +15,9 @@ export const PROGRAMME_CATEGORIES = [
 ] as const;
 
 export const COMPANY_STAGES = [
-  "Pre-Seed",
-  "Seed",
-  "Series A",
-  "Series B",
-  "Growth",
+  "Personal Business",
+  "Listed Company",
+  "International Business",
   "Any",
 ] as const;
 
@@ -85,7 +83,7 @@ export const FORM_HUB_LINKS = [
     id: "company",
     title: "Company Registration Form",
     description:
-      "Register your startup or company to join the NexusAI ecosystem.",
+      "Register your startup or company to join the YokoYoko AI ecosystem.",
     icon: "Building2",
     color: "blue",
     url: "https://forms.google.com/company-registration",

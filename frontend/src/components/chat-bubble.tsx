@@ -58,7 +58,7 @@ export default function ChatBubble() {
         <div className="w-80 sm:w-96 h-[28rem] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-            <span className="font-semibold text-sm">NexusAI Assistant</span>
+            <span className="font-semibold text-sm">YokoYoko AI Assistant</span>
             <button onClick={() => setOpen(false)} className="hover:opacity-80 transition-opacity">
               <X size={18} />
             </button>
@@ -68,7 +68,7 @@ export default function ChatBubble() {
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3">
             {messages.length === 0 && (
               <p className="text-center text-gray-400 dark:text-gray-500 text-xs mt-8">
-                Hi! Ask me anything about NexusAI.
+                Hi! Ask me anything about YokoYoko AI.
               </p>
             )}
             {messages.map((m, i) => (

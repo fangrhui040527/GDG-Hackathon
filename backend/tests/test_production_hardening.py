@@ -1,12 +1,14 @@
 from types import SimpleNamespace
 
+import pytest
 from fastapi.testclient import TestClient
 
 import nexusai.api as api
 import nexusai.database as database
 from nexusai.api import create_app
 from nexusai.config import Settings
-from nexusai.database import Base, create_session_factory, create_sqlite_engine
+from nexusai.database import Base, User, UserSession, create_session_factory, create_sqlite_engine
+from nexusai.security.jwt import create_session_jwt
 from nexusai.services.ai import FakeAIService
 from nexusai.services.bigquery import BigQueryService
 from nexusai.services.mcp import FakeMCPClient
@@ -156,3 +158,211 @@ def test_bq_dashboard_uses_bigquery_mcp_boundary_before_fallback(monkeypatch):
     assert response.status_code == 200
     assert response.json()["source"] == "fallback"
     assert fake_mcp.calls == ["bigquery_query"]
+
+
+TEST_SECRET = "test-secret-with-at-least-32-bytes"
+
+
+def make_test_app(monkeypatch, **settings_overrides):
+    engine = create_sqlite_engine()
+    Base.metadata.create_all(engine)
+    monkeypatch.setattr(
+        api,
+        "get_settings",
+        lambda: make_settings(session_jwt_secret=TEST_SECRET, **settings_overrides),
+    )
+    app = create_app(
+        session_factory=create_session_factory(engine),
+        ai_service=FakeAIService(),
+        mcp_client=FakeMCPClient(),
+    )
+    return app, engine
+
+
+def create_user_session(engine, email: str, role: str, secret: str = TEST_SECRET) -> tuple[int, str]:
+    session_factory = create_session_factory(engine)
+    with session_factory() as db:
+        user = User(email=email, name=email.split("@")[0], role=role)
+        db.add(user)
+        db.flush()
+        token, jti, expires_at = create_session_jwt(user.user_id, role, secret)
+        db.add(UserSession(user_id=user.user_id, jwt_jti=jti, expires_at=expires_at))
+        db.commit()
+        return user.user_id, token
+
+
+def test_update_user_role_requires_authentication(monkeypatch):
+    app, engine = make_test_app(monkeypatch)
+    target_user_id, _ = create_user_session(engine, "target@example.com", "PENDING")
+    client = TestClient(app)
+
+    response = client.patch(f"/users/{target_user_id}/role", json={"role": "MENTOR"})
+
+    assert response.status_code == 401
+
+
+def test_update_user_role_rejects_non_admin(monkeypatch):
+    app, engine = make_test_app(monkeypatch)
+    target_user_id, _ = create_user_session(engine, "target@example.com", "PENDING")
+    _, token = create_user_session(engine, "mentor@example.com", "MENTOR")
+    client = TestClient(app)
+
+    response = client.patch(
+        f"/users/{target_user_id}/role",
+        json={"role": "COMPANY"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_update_user_role_allows_super_admin(monkeypatch):
+    app, engine = make_test_app(monkeypatch)
+    target_user_id, _ = create_user_session(engine, "target@example.com", "PENDING")
+    _, token = create_user_session(engine, "admin@example.com", "SUPER_ADMIN")
+    client = TestClient(app)
+
+    response = client.patch(
+        f"/users/{target_user_id}/role",
+        json={"role": "COMPANY"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "COMPANY"
+
+
+def test_update_user_role_validates_role_after_authentication(monkeypatch):
+    app, engine = make_test_app(monkeypatch)
+    target_user_id, _ = create_user_session(engine, "target@example.com", "PENDING")
+    _, token = create_user_session(engine, "admin@example.com", "SUPER_ADMIN")
+    client = TestClient(app)
+
+    response = client.patch(
+        f"/users/{target_user_id}/role",
+        json={"role": "GOD_MODE"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_demo_login_is_disabled_in_production(monkeypatch):
+    app, _ = make_test_app(monkeypatch, app_env="production")
+    client = TestClient(app)
+
+    response = client.post("/auth/demo-login", json={"email": "admin@example.com", "role": "admin"})
+
+    assert response.status_code == 403
+
+
+def test_default_jwt_secret_is_rejected_in_production(monkeypatch):
+    engine = create_sqlite_engine()
+    Base.metadata.create_all(engine)
+    monkeypatch.setattr(api, "get_settings", lambda: make_settings(app_env="production"))
+
+    with pytest.raises(RuntimeError, match="SESSION_JWT_SECRET"):
+        create_app(
+            session_factory=create_session_factory(engine),
+            ai_service=FakeAIService(),
+            mcp_client=FakeMCPClient(),
+        )
+
+
+def test_bootstrap_admin_is_single_use(monkeypatch):
+    app, engine = make_test_app(monkeypatch, setup_token="setup-token")
+    existing_admin_id, _ = create_user_session(engine, "admin@example.com", "SUPER_ADMIN")
+    pending_user_id, _ = create_user_session(engine, "pending@example.com", "PENDING")
+    assert existing_admin_id != pending_user_id
+    client = TestClient(app)
+
+    response = client.post(
+        "/auth/bootstrap-admin",
+        json={"setup_token": "setup-token", "user_id": pending_user_id},
+    )
+
+    assert response.status_code == 403
+
+
+def test_programme_match_500_response_is_sanitized(monkeypatch):
+    class BrokenMatchSession:
+        def get(self, model, key):
+            return SimpleNamespace(target_industry="", target_company_stage="", target_country="")
+
+        def scalars(self, *args, **kwargs):
+            raise RuntimeError("internal database details")
+
+        def commit(self):
+            pass
+
+        def rollback(self):
+            pass
+
+        def close(self):
+            pass
+
+    class BrokenSessionFactory:
+        def __call__(self):
+            return BrokenMatchSession()
+
+    monkeypatch.setattr(api, "get_settings", lambda: make_settings(session_jwt_secret=TEST_SECRET))
+    app = create_app(
+        session_factory=BrokenSessionFactory(),
+        ai_service=FakeAIService(),
+        mcp_client=FakeMCPClient(),
+    )
+    client = TestClient(app, raise_server_exceptions=False)
+
+    response = client.get("/programmes/1/match")
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Internal error"
+    assert "Traceback" not in response.text
+
+
+def test_shortlist_routes_are_persistent_and_idempotent(monkeypatch):
+    app, engine = make_test_app(monkeypatch)
+    client = TestClient(app)
+    programme = client.post("/programmes", json={"name": "Fintech Sprint"}).json()
+    programme_id = programme["programme_id"]
+
+    empty = client.get(f"/programmes/{programme_id}/shortlist")
+    assert empty.status_code == 200
+    assert empty.json() == []
+
+    payload = {
+        "match_result_id": "mentor-1",
+        "actor_id": "1",
+        "actor_type": "mentor",
+        "actor_name": "Asha Tan",
+        "match_score": 91,
+    }
+    created = client.post(f"/programmes/{programme_id}/shortlist", json=payload)
+    duplicate = client.post(f"/programmes/{programme_id}/shortlist", json=payload)
+
+    assert created.status_code == 201
+    assert duplicate.status_code == 200
+    assert duplicate.json()["id"] == created.json()["id"]
+
+    second_app = create_app(
+        session_factory=create_session_factory(engine),
+        ai_service=FakeAIService(),
+        mcp_client=FakeMCPClient(),
+    )
+    second_client = TestClient(second_app)
+    persisted = second_client.get(f"/programmes/{programme_id}/shortlist")
+    assert persisted.status_code == 200
+    assert persisted.json()[0]["actor_name"] == "Asha Tan"
+
+    removed = second_client.delete(f"/programmes/{programme_id}/shortlist/{created.json()['id']}")
+    assert removed.status_code == 204
+    assert second_client.get(f"/programmes/{programme_id}/shortlist").json() == []
+
+
+def test_shortlist_missing_programme_returns_404(monkeypatch):
+    app, _ = make_test_app(monkeypatch)
+    client = TestClient(app)
+
+    response = client.get("/programmes/99999/shortlist")
+
+    assert response.status_code == 404

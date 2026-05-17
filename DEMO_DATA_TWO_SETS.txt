@@ -1,0 +1,469 @@
+NexusAI Two Demo Data Sets
+==========================
+
+These two sets are designed for a 2 minute 50 second demo. Set 1 is climate/sustainability focused. Set 2 is fintech/international expansion focused.
+
+Business stage options used everywhere:
+- Personal Business
+- Listed Company
+- International Business
+
+============================================================
+DEMO SET 1 - ClimateTech Personal Business Track
+============================================================
+
+Best use:
+Use this set to show company registration, mentor media ingestion, and a sustainability programme.
+
+Company Registration
+--------------------
+Route:
+http://localhost:3001/forms/company
+
+Company Name:
+HelioGrid Analytics
+
+Industry:
+Sustainability
+
+Business Stage:
+Personal Business
+
+Country:
+Malaysia
+
+Company Description:
+HelioGrid Analytics helps small commercial buildings reduce energy costs by using AI to forecast solar generation, battery usage, and peak demand charges.
+
+Company Intro Video:
+Optional. MP4, WebM, or MOV under 2MB.
+
+Support Needed:
+Fundraising & Investor Introductions
+
+Availability:
+Flexible
+
+
+Mentor Registration
+-------------------
+Route:
+http://localhost:3001/forms/mentor
+
+Full Name:
+Dr. Nadia Rahman
+
+Email:
+nadia.rahman.demo@example.com
+
+Job Title:
+Partner, Climate Venture Studio
+
+Organisation Name:
+Climate Venture Studio
+
+LinkedIn Profile URL:
+https://linkedin.com/in/nadia-rahman-demo
+
+Country:
+Malaysia
+
+Short Bio:
+Nadia is a climate technology investor and former energy executive who mentors founders on pilot design, fundraising, and enterprise sales.
+
+CV / Resume PDF:
+Optional. PDF under 2MB.
+
+Video Introduction:
+Optional. MP4, WebM, or MOV under 2MB.
+
+Preferred Company Stage:
+Personal Business
+
+Preferred Industry:
+Sustainability
+
+Type of Support Offered:
+Fundraising & Investor Relations
+
+Available Hours / Month:
+8
+
+Max Companies to Mentor:
+3
+
+Current Availability Status:
+Available - actively accepting mentees
+
+
+Partner Registration
+--------------------
+Route:
+http://localhost:3001/forms/partner
+
+Organisation Name:
+GreenBridge Ventures
+
+Organisation Type:
+Business
+
+Country:
+Singapore
+
+Website:
+https://greenbridge.example.com
+
+Organisation Description:
+GreenBridge Ventures partners with climate and infrastructure startups by opening access to pilots, commercial partners, and regional investors.
+
+Industries of Interest:
+Sustainability
+CleanEnergy
+Finance
+
+Preferred Collaboration Type:
+Funding / Investment
+
+Resources Provided:
+Pilot introductions, investor office hours, ESG reporting support, and corporate sustainability access.
+
+Support Offered:
+Investor readiness coaching, pilot partner introductions, and follow-on funding review for selected startups.
+
+Support Capacity:
+Up to 8 startups per cohort.
+
+Requirements / Expectations:
+Startups should have a working MVP and a clear climate impact metric.
+
+Contact Person:
+Melissa Tan
+
+Contact Email:
+melissa.tan.demo@greenbridge.example.com
+
+
+Service Provider Registration
+-----------------------------
+Route:
+http://localhost:3001/forms/service-provider
+
+Organisation Name:
+CloudOps Launchpad
+
+Service Provider Type:
+Cloud & Infrastructure
+
+Country / Region:
+Malaysia
+
+Website URL:
+https://cloudops-launchpad.example.com
+
+Company Description:
+CloudOps Launchpad helps startups design secure cloud architecture, reduce infrastructure cost, and prepare for enterprise-grade deployments.
+
+Services Offered:
+Cloud architecture, security review, cost optimization, deployment automation
+
+Detailed Service Description:
+The team reviews startup cloud environments, creates a practical architecture plan, identifies cost and security issues, and helps implement CI/CD and monitoring.
+
+Target Company Stage:
+Personal Business
+
+Pricing Model:
+Subsidized (Ecosystem Rate)
+
+Current Capacity:
+Available - Actively taking new clients
+
+Contact Person:
+Alex Lim
+
+Contact Email:
+alex.lim.demo@cloudops.example.com
+
+
+Create Programme Wizard
+-----------------------
+Route:
+http://localhost:3001/organizer/create-programme
+
+Programme Name:
+ASEAN ClimateTech Pilot 2026
+
+Description:
+A pilot-focused programme connecting climate startups with mentors, service providers, and corporate partners across ASEAN.
+
+Category:
+Sustainability
+
+Start Date:
+2026-07-01
+
+End Date:
+2026-09-30
+
+Target Industry:
+Clean Energy & Sustainability
+
+Target Country:
+Malaysia
+
+Target Company Stage:
+Personal Business
+
+Required Companies:
+8
+
+Required Mentors:
+4
+
+Required Partners:
+3
+
+Required Service Providers:
+2
+
+Eligibility Criteria:
+Startups must have a working MVP, a measurable sustainability outcome, and a team available for pilots in Malaysia or ASEAN.
+
+
+============================================================
+DEMO SET 2 - FinTech International Business Track
+============================================================
+
+Best use:
+Use this set if the audience cares about cross-border growth, listed corporations, and regional partnerships.
+
+Company Registration
+--------------------
+Route:
+http://localhost:3001/forms/company
+
+Company Name:
+PayLink Nexus
+
+Industry:
+Fintech
+
+Business Stage:
+International Business
+
+Country:
+Singapore
+
+Company Description:
+PayLink Nexus provides cross-border payment orchestration for SMEs expanding across ASEAN, with compliance routing, FX monitoring, and settlement analytics.
+
+Company Intro Video:
+Optional. MP4, WebM, or MOV under 2MB.
+
+Support Needed:
+Market Access & Distribution
+
+Availability:
+Full-time (40+ hrs/week)
+
+
+Mentor Registration
+-------------------
+Route:
+http://localhost:3001/forms/mentor
+
+Full Name:
+Mr. Daniel Koh
+
+Email:
+daniel.koh.demo@example.com
+
+Job Title:
+Regional Fintech Advisor
+
+Organisation Name:
+ASEAN Payments Council
+
+LinkedIn Profile URL:
+https://linkedin.com/in/daniel-koh-demo
+
+Country:
+Singapore
+
+Short Bio:
+Daniel advises payment companies on licensing, bank partnerships, regional expansion, and enterprise sales across Southeast Asia.
+
+CV / Resume PDF:
+Optional. PDF under 2MB.
+
+Video Introduction:
+Optional. MP4, WebM, or MOV under 2MB.
+
+Preferred Company Stage:
+International Business
+
+Preferred Industry:
+Fintech
+
+Type of Support Offered:
+Business Strategy
+
+Available Hours / Month:
+6
+
+Max Companies to Mentor:
+2
+
+Current Availability Status:
+Limited - accepting 1-2 more
+
+
+Partner Registration
+--------------------
+Route:
+http://localhost:3001/forms/partner
+
+Organisation Name:
+ASEAN BankConnect
+
+Organisation Type:
+Listed
+
+Country:
+Malaysia
+
+Website:
+https://bankconnect.example.com
+
+Organisation Description:
+ASEAN BankConnect is a listed financial services group that provides market access, banking partnerships, and regulatory sandbox support to fintech companies.
+
+Industries of Interest:
+Fintech
+Finance
+DeepTech
+
+Preferred Collaboration Type:
+Market Access & Distribution
+
+Resources Provided:
+Bank partnership introductions, compliance review sessions, sandbox pilots, and distribution channels.
+
+Support Offered:
+Regional banking access, pilot design, and compliance readiness support for fintech startups.
+
+Support Capacity:
+Up to 5 international businesses per cohort.
+
+Requirements / Expectations:
+Companies should have active users, a clear compliance plan, and a regional expansion roadmap.
+
+Contact Person:
+Farah Abdullah
+
+Contact Email:
+farah.abdullah.demo@bankconnect.example.com
+
+
+Service Provider Registration
+-----------------------------
+Route:
+http://localhost:3001/forms/service-provider
+
+Organisation Name:
+RegTech Counsel Asia
+
+Service Provider Type:
+Legal & Compliance
+
+Country / Region:
+Singapore
+
+Website URL:
+https://regtech-counsel.example.com
+
+Company Description:
+RegTech Counsel Asia helps fintech startups prepare licensing documents, data protection policies, and cross-border compliance workflows.
+
+Services Offered:
+Regulatory review, licensing support, data protection policy, compliance workflow design
+
+Detailed Service Description:
+The firm reviews fintech business models, maps compliance obligations by country, and prepares practical documentation for sandbox and licensing discussions.
+
+Target Company Stage:
+International Business
+
+Pricing Model:
+Custom / Negotiable
+
+Current Capacity:
+Limited - A few slots remaining
+
+Contact Person:
+Irene Chua
+
+Contact Email:
+irene.chua.demo@regtech.example.com
+
+
+Create Programme Wizard
+-----------------------
+Route:
+http://localhost:3001/organizer/create-programme
+
+Programme Name:
+ASEAN FinTech Market Access Sprint
+
+Description:
+A market-access programme helping fintech companies validate cross-border payment, lending, and compliance partnerships across ASEAN.
+
+Category:
+Fintech
+
+Start Date:
+2026-08-10
+
+End Date:
+2026-10-30
+
+Target Industry:
+Financial Technology
+
+Target Country:
+Singapore
+
+Target Company Stage:
+International Business
+
+Required Companies:
+6
+
+Required Mentors:
+4
+
+Required Partners:
+4
+
+Required Service Providers:
+2
+
+Eligibility Criteria:
+Companies must have a live product, regional expansion intent, and a compliance owner available for weekly sprint activities.
+
+
+Seeded records to show if not typing live
+-----------------------------------------
+Programmes:
+- Global FinTech Accelerator 2026: target stage Listed Company
+- HealthTech Innovation Lab: target stage Personal Business
+- GreenTech Sustainability Challenge: target stage Personal Business
+- EdTech Mentorship Network: target stage Personal Business
+- Smart City IoT Partnership: target stage International Business
+
+Useful shortlist route:
+http://localhost:3001/organizer/programmes/1/shortlist
+
+Useful admin route:
+http://localhost:3001/admin/dashboard
+

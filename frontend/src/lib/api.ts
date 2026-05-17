@@ -1,4 +1,5 @@
 export type Mentor = {
+  mentor_id?: number;
   id: string;
   full_name: string;
   email: string;
@@ -8,9 +9,12 @@ export type Mentor = {
   languages: string[];
   capacity_score: number;
   bio?: string;
+  cv?: string;
+  video?: string;
 };
 
 export type Company = {
+  company_id?: number;
   id: string;
   company_name: string;
   industry: string;
@@ -18,6 +22,7 @@ export type Company = {
   support_needed: string[];
   languages: string[];
   description?: string;
+  video?: string;
 };
 
 export type EventRecord = {
@@ -243,12 +248,12 @@ export async function fetchActors(): Promise<ActorTableRow[]> {
   return dtos.map(toActorRow);
 }
 
-export async function registerMentor(data: Record<string, unknown>): Promise<unknown> {
-  return apiPost("/profiles/mentors", data);
+export async function registerMentor(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+  return apiPost<Record<string, unknown>>("/profiles/mentors", data);
 }
 
-export async function registerCompany(data: Record<string, unknown>): Promise<unknown> {
-  return apiPost("/profiles/companies", data);
+export async function registerCompany(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+  return apiPost<Record<string, unknown>>("/profiles/companies", data);
 }
 
 export async function registerPartner(data: Record<string, unknown>): Promise<unknown> {
@@ -259,31 +264,59 @@ export async function registerServiceProvider(data: Record<string, unknown>): Pr
   return apiPost("/profiles/service-providers", data);
 }
 
-function toMatchResult(raw: Record<string, unknown>, actorType: import("@/types").ActorType): import("@/types").MatchResult {
-  const score = typeof raw.score === "number" ? Math.round(raw.score * 100) : Number(raw.score ?? 0);
-  const normalised = score > 1 ? score : Math.round(score * 100);
+function normaliseMatchScore(raw: Record<string, unknown>): number {
+  const value =
+    typeof raw.matchScore === "number"
+      ? raw.matchScore
+      : typeof raw.score === "number"
+        ? raw.score
+        : Number(raw.matchScore ?? raw.score ?? 0);
+
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.round(value > 1 ? value : value * 100);
+}
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
+function toMatchTier(score: number): import("@/types").MatchTier {
+  return score >= 85 ? "Excellent" : score >= 70 ? "Strong" : score >= 55 ? "Good" : "Fair";
+}
+
+function isMatchTier(value: unknown): value is import("@/types").MatchTier {
+  return value === "Excellent" || value === "Strong" || value === "Good" || value === "Fair";
+}
+
+function toMatchResult(raw: Record<string, unknown>, actorType: import("@/types").ActorType, index: number): import("@/types").MatchResult {
+  const normalised = normaliseMatchScore(raw);
+  const entityId = String(raw.actorId ?? raw.entity_id ?? raw.id ?? Math.random());
+  const tags = toStringArray(raw.tags);
   return {
-    id: String(raw.entity_id ?? raw.id ?? Math.random()),
-    actorId: String(raw.entity_id ?? raw.id ?? ""),
+    id: String(raw.id ?? `${actorType}-${entityId}-${index}`),
+    actorId: entityId,
     actorType,
-    actorName: String(raw.entity_name ?? raw.actorName ?? "Unknown"),
-    profileSummary: String(raw.rationale ?? raw.profileSummary ?? ""),
+    actorName: String(raw.actorName ?? raw.entity_name ?? "Unknown"),
+    profileSummary: String(raw.profileSummary ?? raw.rationale ?? ""),
     matchScore: normalised,
-    matchTier: normalised >= 85 ? "Excellent" : normalised >= 70 ? "Strong" : normalised >= 55 ? "Good" : "Fair",
-    aiExplanation: String(raw.rationale ?? raw.aiExplanation ?? ""),
-    availabilityLabel: "Available",
-    isAvailable: true,
-    tags: Array.isArray(raw.fit_factors) ? (raw.fit_factors as string[]) : Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
+    matchTier: isMatchTier(raw.matchTier) ? raw.matchTier : toMatchTier(normalised),
+    aiExplanation: String(raw.aiExplanation ?? raw.rationale ?? ""),
+    availabilityLabel: String(raw.availabilityLabel ?? "Available"),
+    isAvailable: typeof raw.isAvailable === "boolean" ? raw.isAvailable : true,
+    tags: tags.length ? tags : toStringArray(raw.fit_factors),
   };
 }
 
 export async function fetchProgrammeMatches(programmeId: string): Promise<import("@/types").MatchResultsGroup> {
   const raw = await apiGet<Record<string, unknown[]>>(`/programmes/${programmeId}/match`);
   return {
-    companies:        ((raw.companies        ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "company")),
-    mentors:          ((raw.mentors          ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "mentor")),
-    partners:         ((raw.partners         ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "partner")),
-    serviceProviders: ((raw.serviceProviders ?? raw.service_providers ?? []) as Record<string, unknown>[]).map((r) => toMatchResult(r, "service_provider")),
+    companies:        ((raw.companies        ?? []) as Record<string, unknown>[]).map((r, i) => toMatchResult(r, "company", i)),
+    mentors:          ((raw.mentors          ?? []) as Record<string, unknown>[]).map((r, i) => toMatchResult(r, "mentor", i)),
+    partners:         ((raw.partners         ?? []) as Record<string, unknown>[]).map((r, i) => toMatchResult(r, "partner", i)),
+    serviceProviders: ((raw.serviceProviders ?? raw.service_providers ?? []) as Record<string, unknown>[]).map((r, i) => toMatchResult(r, "service_provider", i)),
   };
 }
 
@@ -318,7 +351,10 @@ function toShortlistItem(dto: ShortlistItemDTO): import("@/types").ShortlistItem
 }
 
 export async function fetchShortlist(programmeId: string): Promise<import("@/types").ShortlistItem[]> {
-  const dtos = await apiGet<ShortlistItemDTO[]>(`/programmes/${programmeId}/shortlist`);
+  const response = await fetch(`${API_URL}/programmes/${programmeId}/shortlist`, { cache: "no-store" });
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error(await response.text());
+  const dtos: ShortlistItemDTO[] = await response.json();
   return dtos.map(toShortlistItem);
 }
 
@@ -359,8 +395,49 @@ export async function uploadMentorCv(mentorId: string, file: File) {
   }
   return response.json() as Promise<{
     mentor_id: string;
+    source: "cv";
+    cleaned_text: string;
     extracted_profile: Record<string, unknown>;
     extracted_text: string;
+    updated_fields: string[];
+  }>;
+}
+
+export async function uploadMentorVideo(mentorId: string, file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  const response = await fetch(`${API_URL}/mentors/${mentorId}/video`, {
+    method: "POST",
+    body
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.json() as Promise<{
+    mentor_id: string;
+    source: "video";
+    cleaned_text: string;
+    extracted_profile: Record<string, unknown>;
+    updated_fields: string[];
+  }>;
+}
+
+export async function uploadCompanyVideo(companyId: string, file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  const response = await fetch(`${API_URL}/companies/${companyId}/video`, {
+    method: "POST",
+    body
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.json() as Promise<{
+    company_id: string;
+    source: "video";
+    cleaned_text: string;
+    extracted_profile: Record<string, unknown>;
+    updated_fields: string[];
   }>;
 }
 

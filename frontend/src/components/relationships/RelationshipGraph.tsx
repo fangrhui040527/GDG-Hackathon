@@ -1,18 +1,12 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, ZoomIn, ZoomOut, Settings2 } from "lucide-react";
+import { X, ZoomIn, ZoomOut, Settings2, Loader2 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type NodeType = "institution" | "individual" | "government";
 type ActorCategory = "programme" | "company" | "mentor" | "partner" | "service_provider";
 type EdgeStrength = "strong" | "weak";
-
-interface HistoryEntry {
-  title: string;
-  date: string;
-  note: string;
-}
 
 interface GraphNode {
   id: string;
@@ -23,11 +17,8 @@ interface GraphNode {
   y: number;
   r: number;
   sector: string;
-  established: string;
   directLinks: number;
-  influenceScore: number;
-  activeProgrammes: string[];
-  history: HistoryEntry[];
+  score: number;
 }
 
 interface GraphEdge {
@@ -45,115 +36,73 @@ const TYPE_COLOR: Record<NodeType, { fill: string; stroke: string; light: string
   government:  { fill: "#b45309", stroke: "#fcd34d", light: "#fef3c7", text: "Government"  },
 };
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-const NODES: GraphNode[] = [
-  {
-    id: "prog1", label: "Global FinTech", type: "institution", category: "programme",
-    x: 0, y: 0, r: 40,
-    sector: "Financial Technology", established: "2024",
-    directLinks: 8, influenceScore: 9.2,
-    activeProgrammes: ["Global FinTech", "FinTech Hub"],
-    history: [
-      { title: "Shortlist finalised", date: "May 16, 2026", note: "Admin Selection" },
-      { title: "Programme submitted", date: "May 15, 2026", note: "Organiser Action" },
-    ],
-  },
-  {
-    id: "c1", label: "Axiata Digital", type: "institution", category: "company",
-    x: -175, y: -130, r: 30,
-    sector: "Telecommunications", established: "2014",
-    directLinks: 5, influenceScore: 8.3,
-    activeProgrammes: ["Global FinTech"],
-    history: [
-      { title: "Matched by AI", date: "May 16, 2026", note: "Score: 83%" },
-      { title: "Profile registered", date: "Jan 10, 2025", note: "System" },
-    ],
-  },
-  {
-    id: "c2", label: "Grab Ventures", type: "institution", category: "company",
-    x: -210, y: 70, r: 28,
-    sector: "Super-App / VC", established: "2018",
-    directLinks: 4, influenceScore: 8.6,
-    activeProgrammes: ["Global FinTech"],
-    history: [{ title: "Matched by AI", date: "May 16, 2026", note: "Score: 86%" }],
-  },
-  {
-    id: "m1", label: "Dr. Sarah Lim", type: "individual", category: "mentor",
-    x: 55, y: -195, r: 28,
-    sector: "Healthcare Technology", established: "2020",
-    directLinks: 3, influenceScore: 8.8,
-    activeProgrammes: ["Global FinTech"],
-    history: [
-      { title: "Matched by AI", date: "May 16, 2026", note: "Score: 88%" },
-      { title: "Mentor registered", date: "Feb 05, 2025", note: "System" },
-    ],
-  },
-  {
-    id: "m2", label: "Dr. Ahmad Farouk", type: "individual", category: "mentor",
-    x: 185, y: -105, r: 28,
-    sector: "FinTech Strategy", established: "2019",
-    directLinks: 4, influenceScore: 9.1,
-    activeProgrammes: ["Global FinTech"],
-    history: [{ title: "Matched by AI", date: "May 16, 2026", note: "Score: 92%" }],
-  },
-  {
-    id: "m3", label: "Ms. Priya Nair", type: "individual", category: "mentor",
-    x: 210, y: 30, r: 26,
-    sector: "Product & Growth", established: "2021",
-    directLinks: 2, influenceScore: 8.0,
-    activeProgrammes: ["Global FinTech"],
-    history: [{ title: "Matched by AI", date: "May 16, 2026", note: "Score: 80%" }],
-  },
-  {
-    id: "p1", label: "Khazanah Nasional", type: "government", category: "partner",
-    x: 185, y: 150, r: 30,
-    sector: "Investment / Gov", established: "1994",
-    directLinks: 6, influenceScore: 9.4,
-    activeProgrammes: ["Global FinTech", "Seed Fund MY"],
-    history: [
-      { title: "Partnership established", date: "May 16, 2026", note: "Strong Tie" },
-      { title: "Matched by AI", date: "May 16, 2026", note: "Score: 91%" },
-    ],
-  },
-  {
-    id: "p2", label: "Cradle Fund", type: "government", category: "partner",
-    x: 55, y: 205, r: 26,
-    sector: "Early-Stage Funding", established: "2003",
-    directLinks: 4, influenceScore: 7.8,
-    activeProgrammes: ["Global FinTech"],
-    history: [{ title: "Matched by AI", date: "May 16, 2026", note: "Score: 78%" }],
-  },
-  {
-    id: "sp1", label: "AWS Startup Loft", type: "institution", category: "service_provider",
-    x: -80, y: 210, r: 26,
-    sector: "Cloud Infrastructure", established: "2015",
-    directLinks: 3, influenceScore: 9.0,
-    activeProgrammes: ["Global FinTech"],
-    history: [{ title: "Matched by AI", date: "May 16, 2026", note: "Score: 90%" }],
-  },
-  {
-    id: "sp2", label: "KPMG Advisory", type: "institution", category: "service_provider",
-    x: -195, y: 170, r: 24,
-    sector: "Financial Advisory", established: "1987",
-    directLinks: 2, influenceScore: 7.5,
-    activeProgrammes: ["Global FinTech"],
-    history: [{ title: "Matched by AI", date: "May 16, 2026", note: "Score: 75%" }],
-  },
-];
+const CATEGORY_TO_TYPE: Record<string, NodeType> = {
+  programme: "institution",
+  company: "institution",
+  mentor: "individual",
+  partner: "government",
+  service_provider: "institution",
+};
 
-const EDGES: GraphEdge[] = [
-  { id: "e1",  source: "prog1", target: "c1",  strength: "strong", score: 83 },
-  { id: "e2",  source: "prog1", target: "c2",  strength: "strong", score: 86 },
-  { id: "e3",  source: "prog1", target: "m1",  strength: "strong", score: 88 },
-  { id: "e4",  source: "prog1", target: "m2",  strength: "strong", score: 92 },
-  { id: "e5",  source: "prog1", target: "m3",  strength: "strong", score: 80 },
-  { id: "e6",  source: "prog1", target: "p1",  strength: "strong", score: 91 },
-  { id: "e7",  source: "prog1", target: "p2",  strength: "weak",   score: 78 },
-  { id: "e8",  source: "prog1", target: "sp1", strength: "strong", score: 90 },
-  { id: "e9",  source: "prog1", target: "sp2", strength: "weak",   score: 75 },
-  { id: "e10", source: "c1",    target: "m1",  strength: "weak",   score: 65 },
-  { id: "e11", source: "p1",    target: "m2",  strength: "weak",   score: 70 },
-];
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+function layoutNodes(
+  rawNodes: { id: string; label: string; category: string; type: string; sector: string }[],
+  rawEdges: { source: string }[],
+): GraphNode[] {
+  const programmes = rawNodes.filter((n) => n.category === "programme");
+  const others = rawNodes.filter((n) => n.category !== "programme");
+
+  const result: GraphNode[] = [];
+
+  programmes.forEach((p, i) => {
+    result.push({
+      ...p,
+      type: CATEGORY_TO_TYPE[p.category] ?? "institution",
+      category: p.category as ActorCategory,
+      x: programmes.length === 1 ? 0 : (i - (programmes.length - 1) / 2) * 200,
+      y: 0,
+      r: 40,
+      directLinks: rawEdges.filter((e) => e.source === p.id).length,
+      score: 0,
+      sector: p.sector,
+    });
+  });
+
+  const groups: Record<string, typeof others> = {};
+  others.forEach((n) => {
+    const key = n.category;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(n);
+  });
+
+  const categoryOrder = ["mentor", "company", "partner", "service_provider"];
+  const angleStart = -Math.PI / 2;
+  let slotIndex = 0;
+  const totalOthers = others.length;
+
+  categoryOrder.forEach((cat) => {
+    const items = groups[cat] ?? [];
+    items.forEach((n) => {
+      const angle = angleStart + ((slotIndex / Math.max(totalOthers, 1)) * 2 * Math.PI);
+      const radius = 160 + (slotIndex % 2) * 40;
+      result.push({
+        ...n,
+        type: CATEGORY_TO_TYPE[n.category] ?? "institution",
+        category: n.category as ActorCategory,
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius,
+        r: 28,
+        directLinks: rawEdges.filter((e) => e.source === n.id || (e as { target?: string }).target === n.id).length,
+        score: 0,
+        sector: n.sector,
+      });
+      slotIndex++;
+    });
+  });
+
+  return result;
+}
 
 // ─── SVG icons inside nodes ───────────────────────────────────────────────────
 function NodeIcon({ type, cx, cy }: { type: NodeType; cx: number; cy: number }) {
@@ -179,7 +128,6 @@ function NodeIcon({ type, cx, cy }: { type: NodeType; cx: number; cy: number }) 
       </g>
     );
   }
-  // institution / default
   return (
     <g transform={`translate(${dx},${dy}) scale(${s})`} fill="rgba(255,255,255,0.92)" stroke="none">
       <rect x="1.5" y="4" width="9" height="8" rx="0.5" />
@@ -194,11 +142,16 @@ function NodeIcon({ type, cx, cy }: { type: NodeType; cx: number; cy: number }) 
 }
 
 // ─── Detail panel ─────────────────────────────────────────────────────────────
-function DetailPanel({ node, onClose }: { node: GraphNode; onClose: () => void }) {
+function DetailPanel({ node, edges, allNodes, onClose }: { node: GraphNode; edges: GraphEdge[]; allNodes: GraphNode[]; onClose: () => void }) {
+  const labelMap = Object.fromEntries(allNodes.map((n) => [n.id, n.label]));
   const color = TYPE_COLOR[node.type];
+  const connectedEdges = edges.filter((e) => e.source === node.id || e.target === node.id);
+  const avgScore = connectedEdges.length > 0
+    ? Math.round(connectedEdges.reduce((s, e) => s + e.score, 0) / connectedEdges.length)
+    : 0;
+
   return (
     <div className="flex h-full flex-col overflow-auto bg-white">
-      {/* Header */}
       <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
         <div>
           <span
@@ -208,7 +161,7 @@ function DetailPanel({ node, onClose }: { node: GraphNode; onClose: () => void }
             {color.text}
           </span>
           <h2 className="text-lg font-bold text-slate-900">{node.label}</h2>
-          <p className="text-xs text-slate-500">Core System Node</p>
+          <p className="text-xs text-slate-500 capitalize">{node.category.replace("_", " ")}</p>
         </div>
         <button
           onClick={onClose}
@@ -218,70 +171,48 @@ function DetailPanel({ node, onClose }: { node: GraphNode; onClose: () => void }
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-3 border-b border-slate-100 px-5 py-4">
         <div className="rounded-lg border border-slate-200 p-3">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Direct Links</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{node.directLinks}</p>
         </div>
         <div className="rounded-lg border border-slate-200 p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Influence Score</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{node.influenceScore}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Avg Match Score</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{avgScore}%</p>
         </div>
       </div>
 
-      {/* Node details */}
       <div className="border-b border-slate-100 px-5 py-4">
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Node Details</p>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-500">Primary Sector</span>
-            <span className="font-medium text-slate-800">{node.sector}</span>
+            <span className="text-slate-500">Category</span>
+            <span className="font-medium text-slate-800 capitalize">{node.category.replace("_", " ")}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">Established</span>
-            <span className="font-medium text-slate-800">{node.established}</span>
-          </div>
-          <div>
-            <span className="text-slate-500">Active Programmes</span>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {node.activeProgrammes.map((p) => (
-                <span key={p} className="rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                  {p}
-                </span>
-              ))}
+          {node.sector && (
+            <div className="flex justify-between">
+              <span className="text-slate-500">Sector</span>
+              <span className="font-medium text-slate-800">{node.sector}</span>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Relationship history */}
       <div className="flex-1 px-5 py-4">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Relationship History</p>
-        <ul className="space-y-3">
-          {node.history.map((h, i) => (
-            <li key={i} className="flex gap-2.5 text-sm">
-              <span
-                className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: color.fill }}
-              />
-              <div>
-                <p className="font-medium text-slate-800">{h.title}</p>
-                <p className="text-xs text-slate-500">
-                  {h.date} · {h.note}
-                </p>
-              </div>
-            </li>
-          ))}
+        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Connections</p>
+        <ul className="space-y-2">
+          {connectedEdges.map((e) => {
+            const otherId = e.source === node.id ? e.target : e.source;
+            return (
+              <li key={e.id} className="flex items-center justify-between text-sm">
+                <span className="text-slate-700 truncate">{labelMap[otherId] ?? otherId}</span>
+                <span className={`text-xs font-semibold ${e.score >= 90 ? "text-emerald-600" : "text-slate-500"}`}>
+                  {e.score}%
+                </span>
+              </li>
+            );
+          })}
         </ul>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-slate-100 px-5 py-4">
-        <button className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-          View Full Actor Profile
-          <span>→</span>
-        </button>
       </div>
     </div>
   );
@@ -289,6 +220,10 @@ function DetailPanel({ node, onClose }: { node: GraphNode; onClose: () => void }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function RelationshipGraph() {
+  const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [edges, setEdges] = useState<GraphEdge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [showStrong, setShowStrong] = useState(true);
   const [showWeak, setShowWeak] = useState(true);
@@ -297,29 +232,53 @@ export default function RelationshipGraph() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [programmeFilter, setProgrammeFilter] = useState("All Programmes");
-  const [actorFilter, setActorFilter] = useState("All Actor Types");
+  const [actorFilter, setActorFilter] = useState("all");
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // viewBox center
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/relationships/graph`, { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load graph");
+        const data = await res.json();
+        const rawNodes = data.nodes ?? [];
+        const rawEdges = data.edges ?? [];
+        setNodes(layoutNodes(rawNodes, rawEdges));
+        setEdges(rawEdges.map((e: Record<string, unknown>) => ({
+          id: String(e.id),
+          source: String(e.source),
+          target: String(e.target),
+          score: Number(e.score ?? 0),
+          strength: (e.strength as EdgeStrength) ?? "weak",
+        })));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const VW = 600;
   const VH = 480;
   const CX = VW / 2;
   const CY = VH / 2;
 
-  // Filtered nodes
-  const visibleNodes = NODES.filter((n) => activeTypes.has(n.type));
+  const visibleNodes = nodes.filter((n) => {
+    if (!activeTypes.has(n.type)) return false;
+    if (actorFilter !== "all" && n.category !== actorFilter) return false;
+    return true;
+  });
   const visibleIds = new Set(visibleNodes.map((n) => n.id));
 
-  // Filtered edges
-  const visibleEdges = EDGES.filter((e) => {
+  const visibleEdges = edges.filter((e) => {
     if (!visibleIds.has(e.source) || !visibleIds.has(e.target)) return false;
     if (e.strength === "strong" && !showStrong) return false;
     if (e.strength === "weak" && !showWeak) return false;
     return true;
   });
 
-  const nodeMap = Object.fromEntries(NODES.map((n) => [n.id, n]));
+  const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
   const toggleType = (t: NodeType) => {
     setActiveTypes((prev) => {
@@ -351,7 +310,6 @@ export default function RelationshipGraph() {
     setZoom((z) => Math.min(Math.max(z - e.deltaY * 0.001, 0.3), 3));
   }, []);
 
-  // Curved edge path between two nodes
   function edgePath(s: GraphNode, t: GraphNode) {
     const sx = CX + s.x;
     const sy = CY + s.y;
@@ -368,11 +326,36 @@ export default function RelationshipGraph() {
     return `M ${sx} ${sy} Q ${bx} ${by} ${tx} ${ty}`;
   }
 
-  // Midpoint for score label
   function edgeMid(s: GraphNode, t: GraphNode) {
     const sx = CX + s.x; const sy = CY + s.y;
     const tx = CX + t.x; const ty = CY + t.y;
     return { x: (sx + tx) / 2, y: (sy + ty) / 2 };
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        <span className="ml-2 text-sm text-slate-500">Loading relationship graph...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-sm text-red-500">{error}</p>
+      </div>
+    );
+  }
+
+  if (nodes.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center flex-col gap-2">
+        <p className="text-sm text-slate-400">No relationships yet.</p>
+        <p className="text-xs text-slate-400">Add actors to a programme shortlist to see the graph.</p>
+      </div>
+    );
   }
 
   return (
@@ -382,25 +365,16 @@ export default function RelationshipGraph() {
         <span className="font-semibold text-slate-500 uppercase tracking-wide text-[11px]">View Filters:</span>
 
         <select
-          value={programmeFilter}
-          onChange={(e) => setProgrammeFilter(e.target.value)}
-          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-slate-700 text-sm focus:outline-none"
-        >
-          <option>All Programmes</option>
-          <option>Global FinTech</option>
-          <option>HealthTech Accelerator</option>
-        </select>
-
-        <select
           value={actorFilter}
           onChange={(e) => setActorFilter(e.target.value)}
           className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-slate-700 text-sm focus:outline-none"
         >
-          <option>All Actor Types</option>
-          <option>Companies</option>
-          <option>Mentors</option>
-          <option>Partners</option>
-          <option>Service Providers</option>
+          <option value="all">All Actor Types</option>
+          <option value="programme">Programmes</option>
+          <option value="company">Companies</option>
+          <option value="mentor">Mentors</option>
+          <option value="partner">Partners</option>
+          <option value="service_provider">Service Providers</option>
         </select>
 
         <label className="flex items-center gap-2 cursor-pointer">
@@ -410,7 +384,7 @@ export default function RelationshipGraph() {
             onChange={(e) => setShowStrong(e.target.checked)}
             className="accent-indigo-600 h-4 w-4"
           />
-          <span className="text-slate-700">Show Strong Linkages</span>
+          <span className="text-slate-700">Strong Linkages (≥90%)</span>
         </label>
 
         <label className="flex items-center gap-2 cursor-pointer">
@@ -420,7 +394,7 @@ export default function RelationshipGraph() {
             onChange={(e) => setShowWeak(e.target.checked)}
             className="accent-indigo-600 h-4 w-4"
           />
-          <span className="text-slate-700">Show Weak Linkages</span>
+          <span className="text-slate-700">Weak Linkages (&lt;90%)</span>
         </label>
       </div>
 
@@ -429,7 +403,6 @@ export default function RelationshipGraph() {
 
         {/* ── Graph canvas ─────────────────────────────────────────────── */}
         <div className="relative flex-1 overflow-hidden bg-slate-50">
-          {/* Dot grid background */}
           <svg
             className="pointer-events-none absolute inset-0 h-full w-full opacity-40"
             xmlns="http://www.w3.org/2000/svg"
@@ -442,7 +415,6 @@ export default function RelationshipGraph() {
             <rect width="100%" height="100%" fill="url(#dots)" />
           </svg>
 
-          {/* Main SVG */}
           <svg
             ref={svgRef}
             className="h-full w-full cursor-grab active:cursor-grabbing select-none"
@@ -455,7 +427,6 @@ export default function RelationshipGraph() {
           >
             <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`} style={{ transformOrigin: `${CX}px ${CY}px` }}>
 
-              {/* Edges */}
               {visibleEdges.map((edge) => {
                 const s = nodeMap[edge.source];
                 const t = nodeMap[edge.target];
@@ -474,7 +445,6 @@ export default function RelationshipGraph() {
                       strokeDasharray={isStrong ? undefined : "5 4"}
                       opacity={0.75}
                     />
-                    {/* Score label */}
                     <rect
                       x={mid.x - 14}
                       y={mid.y - 8}
@@ -500,7 +470,6 @@ export default function RelationshipGraph() {
                 );
               })}
 
-              {/* Nodes */}
               {visibleNodes.map((node) => {
                 const cx = CX + node.x;
                 const cy = CY + node.y;
@@ -514,15 +483,12 @@ export default function RelationshipGraph() {
                     onClick={() => setSelectedNode(node)}
                     style={{ cursor: "pointer" }}
                   >
-                    {/* Selection ring */}
                     {isSelected && (
                       <circle cx={cx} cy={cy} r={node.r + 8} fill="none" stroke={color.fill} strokeWidth={2} opacity={0.35} />
                     )}
-                    {/* Glow for programme root */}
                     {isProgramme && (
                       <circle cx={cx} cy={cy} r={node.r + 12} fill={color.fill} opacity={0.08} />
                     )}
-                    {/* Node circle */}
                     <circle
                       cx={cx}
                       cy={cy}
@@ -532,9 +498,7 @@ export default function RelationshipGraph() {
                       strokeWidth={isSelected ? 3 : 1.5}
                       filter={isSelected ? "drop-shadow(0 4px 8px rgba(0,0,0,0.25))" : undefined}
                     />
-                    {/* Icon */}
                     <NodeIcon type={node.type} cx={cx} cy={cy} />
-                    {/* Label */}
                     <text
                       x={cx}
                       y={cy + node.r + 14}
@@ -554,24 +518,15 @@ export default function RelationshipGraph() {
 
           {/* Zoom controls */}
           <div className="absolute left-4 top-4 flex flex-col gap-1 rounded-lg border border-slate-200 bg-white shadow-sm">
-            <button
-              onClick={handleZoomIn}
-              className="flex h-8 w-8 items-center justify-center text-slate-600 hover:bg-slate-50 rounded-t-lg"
-            >
+            <button onClick={handleZoomIn} className="flex h-8 w-8 items-center justify-center text-slate-600 hover:bg-slate-50 rounded-t-lg">
               <ZoomIn size={15} />
             </button>
             <div className="h-px bg-slate-100" />
-            <button
-              onClick={handleZoomReset}
-              className="flex h-8 w-8 items-center justify-center text-slate-600 hover:bg-slate-50"
-            >
+            <button onClick={handleZoomReset} className="flex h-8 w-8 items-center justify-center text-slate-600 hover:bg-slate-50">
               <Settings2 size={14} />
             </button>
             <div className="h-px bg-slate-100" />
-            <button
-              onClick={handleZoomOut}
-              className="flex h-8 w-8 items-center justify-center text-slate-600 hover:bg-slate-50 rounded-b-lg"
-            >
+            <button onClick={handleZoomOut} className="flex h-8 w-8 items-center justify-center text-slate-600 hover:bg-slate-50 rounded-b-lg">
               <ZoomOut size={15} />
             </button>
           </div>
@@ -598,11 +553,11 @@ export default function RelationshipGraph() {
               <div className="mt-2 border-t border-slate-100 pt-2 space-y-1.5">
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#94a3b8" strokeWidth="1.8" /></svg>
-                  AI-matched
+                  Strong (≥90%)
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#cbd5e1" strokeWidth="1.2" strokeDasharray="5 4" /></svg>
-                  Weak link
+                  Weak (&lt;90%)
                 </div>
               </div>
             </div>
@@ -612,7 +567,7 @@ export default function RelationshipGraph() {
         {/* ── Detail panel ───────────────────────────────────────────────── */}
         {selectedNode ? (
           <div className="w-80 flex-shrink-0 border-l border-slate-200 bg-white">
-            <DetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
+            <DetailPanel node={selectedNode} edges={edges} allNodes={nodes} onClose={() => setSelectedNode(null)} />
           </div>
         ) : (
           <div className="flex w-80 flex-shrink-0 items-center justify-center border-l border-slate-200 bg-white">

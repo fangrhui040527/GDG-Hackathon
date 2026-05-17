@@ -1,11 +1,13 @@
 {
-  "name": "nexusai-mvp",
+  "name": "yokoyoko-ai",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -k -n FRONTEND,BACKEND -c cyan,magenta \"npm --prefix frontend run dev\" \"cd backend && uvicorn app.main:app --reload\"",
+    "dev": "concurrently -k -n FRONTEND,BACKEND -c cyan,magenta \"npm --prefix frontend run dev\" \"cd backend && uvicorn nexusai.main:app --reload\"",
     "dev:frontend": "npm --prefix frontend run dev",
-    "dev:backend": "cd backend && uvicorn app.main:app --reload",
+    "dev:backend": "cd backend && uvicorn nexusai.main:app --reload",
+    "dev:backend:local": "cd backend && uvicorn nexusai.dev_main:app --reload",
+    "dev:backend:demo": "cd backend && uvicorn app.main:app --reload",
     "build": "npm --prefix frontend run build",
     "start": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint"

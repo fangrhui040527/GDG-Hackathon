@@ -35,6 +35,9 @@ Copy `.env.example` to `.env` and fill these values:
 
 ```env
 DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME
+APP_ENV=development
+DATABASE_CONNECTOR_MODE=direct
+GOOGLE_API_TIMEOUT_SECONDS=10
 
 GOOGLE_CLOUD_PROJECT=your_project_id
 GOOGLE_CLOUD_LOCATION=asia-southeast1

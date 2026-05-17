@@ -2,10 +2,10 @@ from collections.abc import Callable, Iterator
 from datetime import date, datetime, time
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -23,17 +23,25 @@ from nexusai.database import (
     Notification,
     Partner,
     Programme,
+    ProgrammeShortlistItem,
     Selection,
     SelectionItem,
     ServiceProvider,
     create_database_engine,
     create_session_factory,
+    utcnow,
 )
 from nexusai.matching import CompanyProfile, MentorProfile, recommend_mentors
 from nexusai.mcp.registry import build_mcp_registry
 from nexusai.services.ai import AIService, VertexAIService
 from nexusai.services.mcp import MCPClient
 from nexusai.security.audit import get_audit_history, log_audit
+from nexusai.security.dependencies import require_roles
+
+
+MAX_MEDIA_BYTES = 2 * 1024 * 1024
+PDF_CONTENT_TYPES = {"application/pdf"}
+VIDEO_CONTENT_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
 
 
 class MentorIn(BaseModel):
@@ -206,6 +214,48 @@ class SelectionOut(BaseModel):
     items: list[SelectionItemOut] = []
 
 
+class ShortlistItemIn(BaseModel):
+    match_result_id: str
+    actor_id: str
+    actor_type: str
+    actor_name: str
+    match_score: float
+
+
+class ShortlistItemOut(BaseModel):
+    id: str
+    programme_id: str
+    match_result_id: str
+    actor_id: str
+    actor_type: str
+    actor_name: str
+    match_score: float
+    added_at: str
+    added_by: str
+    is_admin_selected: bool
+
+
+class RelationshipGraphNodeOut(BaseModel):
+    id: str
+    label: str
+    category: str
+    type: str
+    sector: str
+
+
+class RelationshipGraphEdgeOut(BaseModel):
+    id: str
+    source: str
+    target: str
+    score: float
+    strength: str
+
+
+class RelationshipGraphOut(BaseModel):
+    nodes: list[RelationshipGraphNodeOut]
+    edges: list[RelationshipGraphEdgeOut]
+
+
 class NotificationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     notification_id: int
@@ -264,7 +314,6 @@ class ProgrammeOut(BaseModel):
 def create_default_session_factory() -> sessionmaker[Session]:
     settings = get_settings()
     engine = create_database_engine(settings)
-    Base.metadata.create_all(engine)
     return create_session_factory(engine)
 
 
@@ -292,12 +341,15 @@ def create_app(
     session_factory = session_factory or create_default_session_factory()
     ai_service = ai_service or create_default_ai_service()
     mcp_client = mcp_client or create_default_mcp_client()
+    settings = get_settings()
 
     app = FastAPI(title="NexusAI MVP", version="0.1.0")
+    app.state.settings = settings
+    cors_origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:8000", "http://127.0.0.1:3000", "http://127.0.0.1:8000"],
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -305,17 +357,15 @@ def create_app(
 
     import logging as _logging
     _log = _logging.getLogger("nexusai")
-    try:
-        _jwt = get_settings().session_jwt_secret
-        if not _jwt:
-            _log.warning("SESSION_JWT_SECRET not set — using insecure default. Set it before deploying.")
-            _jwt = "dev-secret-change-me"
-        app.state.jwt_secret = _jwt
-    except Exception:
-        _log.warning("SESSION_JWT_SECRET not set — using insecure default. Set it before deploying.")
-        app.state.jwt_secret = "dev-secret-change-me"
+    _jwt = settings.session_jwt_secret
+    if settings.app_env == "production" and (not _jwt or _jwt == "dev-secret-change-me"):
+        raise RuntimeError("SESSION_JWT_SECRET must be set to a non-default value in production")
+    if not _jwt:
+        _log.warning("SESSION_JWT_SECRET not set — using insecure development default.")
+        _jwt = "dev-secret-change-me"
+    app.state.jwt_secret = _jwt
 
-    _oauth_client_id = getattr(get_settings(), "google_oauth_client_id", None) if get_settings else None
+    _oauth_client_id = getattr(settings, "google_oauth_client_id", None)
     if not _oauth_client_id:
         _log.warning("GOOGLE_OAUTH_CLIENT_ID not configured — /auth/google will return 500.")
 
@@ -340,6 +390,22 @@ def create_app(
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/ready")
+    def ready() -> dict[str, str]:
+        session = session_factory()
+        try:
+            session.execute(text("SELECT 1"))
+        except Exception as exc:
+            try:
+                session.rollback()
+            except Exception:
+                pass
+            _log.warning("database readiness check failed: %s", exc)
+            raise HTTPException(status_code=503, detail="database_unavailable") from None
+        finally:
+            session.close()
+        return {"status": "ready"}
 
     # ── Auth endpoints ────────────────────────────────────────
 
@@ -375,7 +441,7 @@ def create_app(
             db.add(user)
             db.flush()
         else:
-            user.last_login_at = datetime.now()
+            user.last_login_at = utcnow()
             db.flush()
 
         jwt_secret = app.state.jwt_secret
@@ -400,7 +466,7 @@ def create_app(
         if jti:
             sess = db.query(UserSession).filter(UserSession.jwt_jti == jti).first()
             if sess:
-                sess.revoked_at = datetime.now()
+                sess.revoked_at = utcnow()
                 db.flush()
         return {"status": "logged_out"}
 
@@ -425,6 +491,8 @@ def create_app(
             raise HTTPException(status_code=403, detail="Bootstrap not available")
         if payload.get("setup_token") != setup_token:
             raise HTTPException(status_code=403, detail="Invalid setup token")
+        if db.query(User).filter(User.role == "SUPER_ADMIN").first():
+            raise HTTPException(status_code=403, detail="Bootstrap admin has already been used")
 
         user_id = payload.get("user_id")
         if not user_id:
@@ -437,7 +505,12 @@ def create_app(
         return {"status": "promoted", "user_id": user.user_id, "role": user.role}
 
     @app.patch("/users/{user_id}/role")
-    def update_user_role(user_id: int, payload: dict[str, str], db: Db):
+    def update_user_role(
+        user_id: int,
+        payload: dict[str, str],
+        db: Db,
+        actor: dict = Depends(require_roles("SUPER_ADMIN")),
+    ):
         from nexusai.database import User
 
         new_role = payload.get("role", "")
@@ -455,6 +528,8 @@ def create_app(
     def demo_login(payload: dict[str, str], db: Db):
         from nexusai.database import User
 
+        if settings.app_env != "development":
+            raise HTTPException(status_code=403, detail="demo-login disabled")
         email = payload.get("email", "").strip()
         role = payload.get("role", "").strip().upper()
         if not email:
@@ -469,7 +544,7 @@ def create_app(
             db.flush()
         else:
             user.role = mapped_role
-            user.last_login_at = datetime.now()
+            user.last_login_at = utcnow()
             db.flush()
 
         return {
@@ -647,11 +722,13 @@ def create_app(
     @app.get("/programmes/{programme_id}/match")
     def match_programme(programme_id: int, db: Db):
         """Score all actors against a programme's target criteria."""
-        import traceback as _tb
         try:
             return _match_programme_impl(programme_id, db)
         except Exception as exc:
-            raise HTTPException(status_code=500, detail=_tb.format_exc()) from exc
+            if isinstance(exc, HTTPException):
+                raise
+            _log.exception("match_programme failed programme_id=%s", programme_id)
+            raise HTTPException(status_code=500, detail="Internal error") from None
 
     def _match_programme_impl(programme_id: int, db: Session):
         prog = db.get(Programme, programme_id)
@@ -800,6 +877,127 @@ def create_app(
             "serviceProviders": sps_out,
         }
 
+    def _shortlist_out(item: ProgrammeShortlistItem) -> ShortlistItemOut:
+        added_at = item.added_at or utcnow()
+        return ShortlistItemOut(
+            id=str(item.shortlist_id),
+            programme_id=str(item.programme_id),
+            match_result_id=item.match_result_id,
+            actor_id=item.actor_id,
+            actor_type=item.actor_type,
+            actor_name=item.actor_name,
+            match_score=item.match_score,
+            added_at=added_at.isoformat(),
+            added_by=item.added_by,
+            is_admin_selected=item.is_admin_selected,
+        )
+
+    def _require_programme(db: Session, programme_id: int) -> Programme:
+        programme = db.get(Programme, programme_id)
+        if not programme:
+            raise HTTPException(status_code=404, detail="Programme not found")
+        return programme
+
+    @app.get("/programmes/{programme_id}/shortlist", response_model=list[ShortlistItemOut])
+    def list_programme_shortlist(programme_id: int, db: Db):
+        _require_programme(db, programme_id)
+        items = db.scalars(
+            select(ProgrammeShortlistItem)
+            .where(ProgrammeShortlistItem.programme_id == programme_id)
+            .order_by(ProgrammeShortlistItem.added_at.desc(), ProgrammeShortlistItem.shortlist_id.desc())
+        ).all()
+        return [_shortlist_out(item) for item in items]
+
+    @app.post("/programmes/{programme_id}/shortlist", response_model=ShortlistItemOut, status_code=201)
+    def add_programme_shortlist_item(programme_id: int, payload: ShortlistItemIn, response: Response, db: Db):
+        _require_programme(db, programme_id)
+        existing = db.scalar(
+            select(ProgrammeShortlistItem).where(
+                ProgrammeShortlistItem.programme_id == programme_id,
+                ProgrammeShortlistItem.match_result_id == payload.match_result_id,
+            )
+        )
+        if existing:
+            response.status_code = 200
+            return _shortlist_out(existing)
+
+        item = ProgrammeShortlistItem(
+            programme_id=programme_id,
+            match_result_id=payload.match_result_id,
+            actor_id=payload.actor_id,
+            actor_type=payload.actor_type,
+            actor_name=payload.actor_name,
+            match_score=payload.match_score,
+            added_by="Admin",
+            is_admin_selected=True,
+        )
+        db.add(item)
+        db.flush()
+        return _shortlist_out(item)
+
+    @app.delete("/programmes/{programme_id}/shortlist/{item_id}", status_code=204)
+    def remove_programme_shortlist_item(programme_id: int, item_id: str, db: Db):
+        _require_programme(db, programme_id)
+        try:
+            shortlist_id = int(item_id)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Shortlist item not found") from None
+        item = db.get(ProgrammeShortlistItem, shortlist_id)
+        if not item or item.programme_id != programme_id:
+            raise HTTPException(status_code=404, detail="Shortlist item not found")
+        db.delete(item)
+        db.flush()
+        return None
+
+    @app.get("/relationships/graph", response_model=RelationshipGraphOut)
+    def get_relationship_graph(db: Db):
+        nodes: list[dict[str, Any]] = []
+        edges: list[dict[str, Any]] = []
+        seen_nodes: set[str] = set()
+
+        rows = db.execute(
+            select(ProgrammeShortlistItem, Programme)
+            .join(Programme, ProgrammeShortlistItem.programme_id == Programme.programme_id)
+            .order_by(Programme.programme_id, ProgrammeShortlistItem.shortlist_id)
+        ).all()
+
+        for item, programme in rows:
+            programme_node_id = f"prog-{programme.programme_id}"
+            if programme_node_id not in seen_nodes:
+                seen_nodes.add(programme_node_id)
+                nodes.append({
+                    "id": programme_node_id,
+                    "label": programme.name,
+                    "category": "programme",
+                    "type": "institution",
+                    "sector": programme.category or "",
+                })
+
+            actor_node_id = f"{item.actor_type}-{item.actor_id}"
+            if actor_node_id not in seen_nodes:
+                seen_nodes.add(actor_node_id)
+                nodes.append({
+                    "id": actor_node_id,
+                    "label": item.actor_name,
+                    "category": item.actor_type,
+                    "type": "individual" if item.actor_type == "mentor" else "institution",
+                    "sector": "",
+                })
+
+            score = float(item.match_score or 0)
+            if 0 < score <= 1:
+                score *= 100
+
+            edges.append({
+                "id": f"edge-{programme_node_id}-{actor_node_id}",
+                "source": programme_node_id,
+                "target": actor_node_id,
+                "score": round(score, 2),
+                "strength": "strong" if score >= 90 else "weak",
+            })
+
+        return {"nodes": nodes, "edges": edges}
+
     # ── Actors aggregate endpoint ─────────────────────────────
 
     @app.get("/actors")
@@ -881,38 +1079,195 @@ def create_app(
         db.flush()
         return followup
 
-    @app.get("/analytics/dashboard", response_model=DashboardMetrics)
+    @app.get("/analytics/dashboard")
     def analytics_dashboard(db: Db):
-        approved = db.scalar(
-            select(func.count()).select_from(Selection).where(Selection.approval_status == "APPROVED")
-        ) or 0
-        return DashboardMetrics(
-            mentors=count_rows(db, Mentor),
-            companies=count_rows(db, Company),
-            events=count_rows(db, Event),
-            followups=count_rows(db, FollowUp),
-            selections=count_rows(db, Selection),
-            approved_selections=approved,
-            average_outcome_score=0.0,
-        )
+        return {
+            "mentors": count_rows(db, Mentor),
+            "companies": count_rows(db, Company),
+            "events": count_rows(db, Event),
+            "follow_ups": count_rows(db, FollowUp),
+            "selections": count_rows(db, Selection),
+        }
+
+    async def _read_media_upload(file: UploadFile, allowed_content_types: set[str]) -> bytes:
+        content_type = file.content_type or "application/octet-stream"
+        if content_type not in allowed_content_types:
+            raise HTTPException(status_code=415, detail="Unsupported media type")
+        content = await file.read()
+        if len(content) > MAX_MEDIA_BYTES:
+            raise HTTPException(status_code=413, detail="File exceeds 2MB limit")
+        return content
+
+    def _non_empty(value: Any) -> bool:
+        if value is None:
+            return False
+        if isinstance(value, str):
+            return bool(value.strip())
+        return True
+
+    def _cleaned_text(profile: dict[str, Any], fallback: str, preferred_field: str) -> str:
+        for key in ("cleaned_text", preferred_field, "short_bio", "company_description", "bio"):
+            value = profile.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return fallback.strip()
+
+    def _apply_blank_profile_fields(target: Any, profile: dict[str, Any], fields: list[str]) -> list[str]:
+        updated: list[str] = []
+        for field in fields:
+            value = profile.get(field)
+            if not _non_empty(value):
+                continue
+            if not hasattr(target, field):
+                continue
+            current = getattr(target, field)
+            if _non_empty(current):
+                continue
+            setattr(target, field, value.strip() if isinstance(value, str) else value)
+            updated.append(field)
+        return updated
+
+    def _mentor_upload_response(
+        mentor: Mentor,
+        source: str,
+        cleaned_text: str,
+        extracted_profile: dict[str, Any],
+        updated_fields: list[str],
+        extracted_text: str | None = None,
+    ) -> dict[str, Any]:
+        response = {
+            "mentor_id": mentor.mentor_id,
+            "source": source,
+            "cleaned_text": cleaned_text,
+            "extracted_profile": extracted_profile,
+            "updated_fields": updated_fields,
+        }
+        if extracted_text is not None:
+            response["extracted_text"] = extracted_text
+        return response
 
     @app.post("/mentors/{mentor_id}/cv")
     async def upload_mentor_cv(mentor_id: int, db: Db, file: UploadFile = File(...)):
         mentor = db.get(Mentor, mentor_id)
         if not mentor:
             raise HTTPException(status_code=404, detail="Mentor not found")
-        content = await file.read()
-        extracted_text = mcp_client.document_ai_parse(
-            filename=file.filename or "mentor-cv.pdf",
-            content=content,
-            content_type=file.content_type or "application/octet-stream",
+        content = await _read_media_upload(file, PDF_CONTENT_TYPES)
+        try:
+            extracted_text = mcp_client.document_ai_parse(
+                filename=file.filename or "mentor-cv.pdf",
+                content=content,
+                content_type=file.content_type or "application/pdf",
+            )
+            extracted_profile = ai_service.extract_mentor_profile(extracted_text)
+        except Exception as exc:
+            _log.exception("mentor CV processing failed mentor_id=%s", mentor_id)
+            raise HTTPException(status_code=502, detail="Media processing failed") from None
+
+        cleaned_text = _cleaned_text(extracted_profile, extracted_text, "short_bio")
+        updated_fields = _apply_blank_profile_fields(
+            mentor,
+            extracted_profile,
+            [
+                "full_name",
+                "email",
+                "job_title",
+                "organization_name",
+                "linkedin_profile_url",
+                "preferred_industry",
+                "type_of_support_offered",
+                "preferred_company_stage",
+                "short_bio",
+                "current_availability_status",
+                "country",
+            ],
         )
-        extracted_profile = ai_service.extract_mentor_profile(extracted_text)
-        mentor.cv = extracted_text
+        mentor.cv = cleaned_text
+        db.flush()
+        return _mentor_upload_response(
+            mentor,
+            "cv",
+            cleaned_text,
+            extracted_profile,
+            updated_fields,
+            extracted_text=extracted_text,
+        )
+
+    @app.post("/mentors/{mentor_id}/video")
+    async def upload_mentor_video(mentor_id: int, db: Db, file: UploadFile = File(...)):
+        mentor = db.get(Mentor, mentor_id)
+        if not mentor:
+            raise HTTPException(status_code=404, detail="Mentor not found")
+        content = await _read_media_upload(file, VIDEO_CONTENT_TYPES)
+        try:
+            transcript = mcp_client.chirp_transcribe(
+                filename=file.filename or "mentor-video",
+                content=content,
+            )
+            extracted_profile = ai_service.extract_mentor_video_profile(transcript)
+        except Exception as exc:
+            _log.exception("mentor video processing failed mentor_id=%s", mentor_id)
+            raise HTTPException(status_code=502, detail="Media processing failed") from None
+
+        cleaned_text = _cleaned_text(extracted_profile, transcript, "short_bio")
+        updated_fields = _apply_blank_profile_fields(
+            mentor,
+            extracted_profile,
+            [
+                "full_name",
+                "email",
+                "job_title",
+                "organization_name",
+                "linkedin_profile_url",
+                "preferred_industry",
+                "type_of_support_offered",
+                "preferred_company_stage",
+                "short_bio",
+                "current_availability_status",
+                "country",
+            ],
+        )
+        mentor.video = cleaned_text
+        db.flush()
+        return _mentor_upload_response(mentor, "video", cleaned_text, extracted_profile, updated_fields)
+
+    @app.post("/companies/{company_id}/video")
+    async def upload_company_video(company_id: int, db: Db, file: UploadFile = File(...)):
+        company = db.get(Company, company_id)
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        content = await _read_media_upload(file, VIDEO_CONTENT_TYPES)
+        try:
+            transcript = mcp_client.chirp_transcribe(
+                filename=file.filename or "company-video",
+                content=content,
+            )
+            extracted_profile = ai_service.extract_company_video_profile(transcript)
+        except Exception:
+            _log.exception("company video processing failed company_id=%s", company_id)
+            raise HTTPException(status_code=502, detail="Media processing failed") from None
+
+        cleaned_text = _cleaned_text(extracted_profile, transcript, "company_description")
+        updated_fields = _apply_blank_profile_fields(
+            company,
+            extracted_profile,
+            [
+                "company_name",
+                "company_description",
+                "country",
+                "industry",
+                "business_stage",
+                "support_needed",
+                "availability",
+            ],
+        )
+        company.video = cleaned_text
+        db.flush()
         return {
-            "mentor_id": mentor.mentor_id,
-            "extracted_text": extracted_text,
+            "company_id": company.company_id,
+            "source": "video",
+            "cleaned_text": cleaned_text,
             "extracted_profile": extracted_profile,
+            "updated_fields": updated_fields,
         }
 
     @app.post("/agent/chat")
@@ -1158,24 +1513,51 @@ def create_app(
 
     @app.get("/analytics/bq-dashboard")
     def bq_dashboard():
-        from nexusai.services.bigquery import BigQueryService, FakeBigQueryService
+        from nexusai.services.bigquery import (
+            BigQueryService,
+            FakeBigQueryService,
+            dashboard_metrics_from_rows,
+            dashboard_metrics_sql,
+        )
 
         settings = get_settings()
         try:
+            result = mcp_client.bigquery_query(dashboard_metrics_sql(settings.bigquery_dataset))
+            rows = result.get("rows", []) if isinstance(result, dict) else []
+            if rows:
+                return dashboard_metrics_from_rows(rows)
+            if isinstance(result, dict) and ("rows" in result or result.get("status") == "not_configured"):
+                return FakeBigQueryService().get_dashboard_metrics()
+        except Exception as exc:
+            _log.warning("bigquery MCP dashboard query failed: %s", exc)
+
+        try:
             svc = BigQueryService(settings)
             return svc.get_dashboard_metrics()
-        except Exception:
+        except Exception as exc:
+            _log.warning("direct BigQuery dashboard fallback failed: %s", exc)
             return FakeBigQueryService().get_dashboard_metrics()
 
     @app.get("/analytics/outcome-trends")
     def outcome_trends():
-        from nexusai.services.bigquery import BigQueryService, FakeBigQueryService
+        from nexusai.services.bigquery import BigQueryService, FakeBigQueryService, outcome_trends_sql
 
         settings = get_settings()
         try:
+            result = mcp_client.bigquery_query(outcome_trends_sql(settings.bigquery_dataset))
+            rows = result.get("rows", []) if isinstance(result, dict) else []
+            if rows:
+                return rows
+            if isinstance(result, dict) and ("rows" in result or result.get("status") == "not_configured"):
+                return FakeBigQueryService().get_outcome_trends()
+        except Exception as exc:
+            _log.warning("bigquery MCP outcome trends query failed: %s", exc)
+
+        try:
             svc = BigQueryService(settings)
             return svc.get_outcome_trends()
-        except Exception:
+        except Exception as exc:
+            _log.warning("direct BigQuery outcome trends fallback failed: %s", exc)
             return FakeBigQueryService().get_outcome_trends()
 
     return app

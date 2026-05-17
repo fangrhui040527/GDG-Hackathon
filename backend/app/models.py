@@ -132,11 +132,16 @@ class MentorCreate(BaseModel):
 
 class CompanyCreate(BaseModel):
     company_name: str
-    industry: str
-    stage: str
-    support_needed: list[str] = []
+    industry: str = ""
+    stage: str = ""
+    business_stage: str = ""
+    support_needed: list[str] | str = []
     languages: list[str] = []
     description: Optional[str] = None
+    company_description: Optional[str] = None
+    country: Optional[str] = None
+    availability: Optional[str] = None
+    event_id: Optional[int] = None
 
 
 class PartnerCreate(BaseModel):
