@@ -1,96 +1,83 @@
-# NexusAI MVP
+# YokoYoko AI
 
-NexusAI is a Vertex AI + MCP ecosystem matching MVP for hackathon demos.
+> Vertex AI + MCP ecosystem matching MVP for hackathon demos.
 
-This implementation follows the design document with the requested changes:
+## Architecture
 
-- Vertex AI is the AI runtime for Gemini, profile cleanup, rationale generation, and embeddings.
-- Cloud SQL PostgreSQL replaces Firestore for operational data and agent checkpoints.
-- MCP architecture is kept for BigQuery, Spanner Graph, Document AI, and Chirp STT.
-- Firestore MCP, Gmail MCP, Drive MCP, and Calendar MCP are not registered.
-- Document AI is used through the allowed MCP boundary for mentor CV parsing.
-- Cloud Translation is a direct Google Cloud service boundary.
+| Layer | Technology |
+|-------|-----------|
+| AI runtime | Vertex AI (Gemini 2.5 Flash/Pro, text-embedding-005) |
+| Operational DB | Cloud SQL – PostgreSQL (via SQLAlchemy async + psycopg 3) |
+| Agent checkpoints | `agent_checkpoints` table (PostgreSQL) |
+| MCP – analytics | BigQuery MCP |
+| MCP – graph | Spanner Graph MCP |
+| MCP – CV parsing | Document AI MCP |
+| MCP – voice | Chirp STT MCP |
+| Translation | Cloud Translation API (direct) |
+| Frontend | Next.js 14 (App Router) |
 
-## Project Shape
+**Disabled MCP servers:** Firestore, Gmail, Drive, Calendar  
+(enforced at runtime via `MCPRegistry` – attempting to register these raises `ValueError`)
 
-```text
-nexusai/                 FastAPI backend package
-  api.py                 REST API and demo workflow
-  config.py              Vertex, PostgreSQL, and MCP settings
-  database.py            SQLAlchemy models for PostgreSQL
-  matching.py            Deterministic base scorer
-  mcp/registry.py        Allowed MCP tool registry
-  services/              Vertex AI, MCP, vector, translation boundaries
-app/                     Next.js app router frontend
-components/              Admin dashboard UI
-lib/api.ts               Frontend API client
-scripts/init_db.py       Create PostgreSQL tables
-scripts/seed_demo.py     Seed demo mentor/company/event
-tests/                   Backend contract tests
+## Project Structure
+
+```
+yokoyoko/               FastAPI backend package
+  main.py               FastAPI app + startup
+  api.py                REST routes and demo workflow
+  config.py             Pydantic-settings (Vertex, PostgreSQL, MCP flags)
+  database.py           SQLAlchemy async models
+  matching.py           Deterministic base scorer (tag overlap + cosine)
+  mcp/registry.py       Allowed MCP tool registry with allowlist enforcement
+  services/
+    vertex.py           Gemini + embedding + vector search boundary
+    translation.py      Cloud Translation boundary
+app/                    Next.js frontend
+  app/                  App Router pages
+  components/           Admin dashboard UI
+  lib/api.ts            Typed API client
+scripts/
+  init_db.py            Create PostgreSQL tables
+  seed_demo.py          Seed demo mentor + company
+tests/
+  test_yokoyoko.py      Contract + integration tests
 ```
 
-## Environment
-
-Copy `.env.example` to `.env` and fill these values:
-
-```env
-DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME
-APP_ENV=development
-DATABASE_CONNECTOR_MODE=direct
-GOOGLE_API_TIMEOUT_SECONDS=10
-
-GOOGLE_CLOUD_PROJECT=your_project_id
-GOOGLE_CLOUD_LOCATION=asia-southeast1
-GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
-
-VERTEX_GEMINI_MODEL=gemini-2.5-flash
-VERTEX_REASONING_MODEL=gemini-2.5-pro
-VERTEX_EMBEDDING_MODEL=text-embedding-005
-VERTEX_VECTOR_INDEX_ENDPOINT_ID=your_index_endpoint_id
-
-DOCUMENT_AI_PROCESSOR_ID=your_processor_id
-
-ENABLE_BIGQUERY_MCP=true
-ENABLE_SPANNER_GRAPH_MCP=true
-ENABLE_DOCUMENT_AI_MCP=true
-ENABLE_CHIRP_STT_MCP=true
-
-ENABLE_FIRESTORE_MCP=false
-ENABLE_GMAIL_MCP=false
-ENABLE_DRIVE_MCP=false
-ENABLE_CALENDAR_MCP=false
-
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-## Run Backend
+## Quickstart
 
 ```bash
+# 1. Install backend
+pip install -e ".[dev]"
+
+# 2. Configure environment
+cp .env.example .env
+# Fill in DATABASE_URL, GOOGLE_CLOUD_PROJECT, GOOGLE_APPLICATION_CREDENTIALS, etc.
+
+# 3. Init DB and seed demo data
 python scripts/init_db.py
 python scripts/seed_demo.py
-uvicorn nexusai.main:app --reload --port 8000
+
+# 4. Run backend
+uvicorn yokoyoko.main:app --reload --port 8000
+
+# 5. Run frontend (separate terminal)
+cd app && npm install && npm run dev
+# → http://localhost:3000
 ```
 
-Useful endpoints:
+## API Endpoints
 
-- `GET /health`
-- `POST /profiles/mentors`
-- `POST /profiles/companies`
-- `POST /mentors/{mentor_id}/cv`
-- `POST /matches/recommend`
-- `POST /selections`
-- `POST /selections/{selection_id}/approve`
-- `POST /followups`
-- `GET /analytics/dashboard`
-
-## Run Frontend
-
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Service health check |
+| POST | `/profiles/mentors` | Create mentor profile |
+| POST | `/profiles/companies` | Create company profile |
+| POST | `/mentors/{id}/cv` | Upload and parse mentor CV |
+| POST | `/matches/recommend` | Recommend ranked mentors for a company |
+| POST | `/selections` | Record a mentor selection |
+| POST | `/selections/{id}/approve` | Approve a selection |
+| POST | `/followups` | Record a follow-up action |
+| GET | `/analytics/dashboard` | Aggregated metrics |
 
 ## Tests
 
@@ -98,10 +85,8 @@ Open `http://localhost:3000`.
 python -m pytest -q
 ```
 
-The test suite verifies:
-
-- PostgreSQL config rejects non-PostgreSQL URLs.
-- Only allowed MCP tools are registered.
-- Firestore/Gmail/Drive/Calendar MCP tools are excluded.
-- Matching ranks mentors deterministically.
-- The API demo flow creates profiles, recommends matches, approves a selection, records follow-up, and updates metrics.
+Verifies:
+- PostgreSQL URL validation (non-PostgreSQL URLs rejected)
+- MCP allowlist (Firestore/Gmail/Drive/Calendar raise `ValueError`)
+- Matching determinism and `top_k` behaviour
+- End-to-end demo flow (skipped if `DATABASE_URL` not in environment)
